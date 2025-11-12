@@ -78,6 +78,9 @@ class SankeyVisualizer:
         colors = list(mcolors.TABLEAU_COLORS.values())
         self.class_colors = {cls: colors[i % len(colors)] for i, cls in enumerate(all_classes)}
 
+        # Track which classes have patterns
+        classes_with_patterns = set()
+
         # Build sequential flows
         flows = []
         nodes = []
@@ -122,11 +125,17 @@ class SankeyVisualizer:
             for class_name in all_classes:
                 class_data = disc_df[disc_df[class_col] == class_name]
                 if len(class_data) == 0:
+                    print(f"    ⚠️  Class '{class_name}' has no {n}-gram data")
                     continue
 
                 # Sort by score and take top K
                 top = class_data.nlargest(top_k_per_class, score_col)
-                top_patterns[n][class_name] = top.to_dict('records')
+                if len(top) > 0:
+                    top_patterns[n][class_name] = top.to_dict('records')
+                    classes_with_patterns.add(class_name)
+                    print(f"    ✅ Class '{class_name}': {len(top)} {n}-grams")
+                else:
+                    print(f"    ⚠️  Class '{class_name}': No {n}-grams after filtering")
 
         # Build nodes and flows
         node_id = 0
@@ -140,7 +149,25 @@ class SankeyVisualizer:
             # For each class
             for class_name in all_classes:
                 if class_name not in top_patterns[n]:
-                    continue
+                    # Try to include this class even with fewer patterns
+                    # Check if it exists in any n-gram data
+                    disc_df = self.ngram_data[n].get('discriminative')
+                    if disc_df is not None:
+                        class_col = 'class' if 'class' in disc_df.columns else 'type'
+                        class_data = disc_df[disc_df[class_col] == class_name]
+                        if len(class_data) > 0:
+                            # Use all available patterns for this class (even if < top_k)
+                            score_col = None
+                            for col in ['discriminative_score', 'score', 'combined_score', 'lift']:
+                                if col in disc_df.columns:
+                                    score_col = col
+                                    break
+                            if score_col:
+                                top = class_data.nlargest(min(len(class_data), top_k_per_class), score_col)
+                                top_patterns[n][class_name] = top.to_dict('records')
+                                print(f"    📌 Included class '{class_name}' with {len(top)} {n}-grams (below threshold)")
+                    if class_name not in top_patterns[n]:
+                        continue
 
                 patterns = top_patterns[n][class_name]
 
@@ -242,10 +269,25 @@ class SankeyVisualizer:
                                         })
 
         print(f"  Created {len(nodes)} nodes and {len(source_target_flows)} flows")
+        
+        # Report on classes
+        classes_in_diagram = set(node['class'] for node in nodes)
+        missing_classes = set(all_classes) - classes_in_diagram
+        
+        if missing_classes:
+            print(f"\n  ⚠️  Classes found but not in diagram: {sorted(missing_classes)}")
+            print(f"     (May have too few patterns or no sequential matches)")
+        else:
+            print(f"\n  ✅ All {len(all_classes)} classes are represented in the diagram")
+        
+        print(f"  📊 Classes in diagram: {sorted(classes_in_diagram)}")
+        
         return {
             'nodes': nodes,
             'flows': source_target_flows,
-            'classes': all_classes
+            'classes': all_classes,
+            'classes_in_diagram': classes_in_diagram,
+            'missing_classes': missing_classes
         }
 
     def create_sankey_diagram(self, top_k_per_class=15, output_file='sankey_npath_analysis.html'):
