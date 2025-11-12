@@ -101,13 +101,20 @@ class SankeyVisualizer:
         
         # Store class colors - ensure all are 6-character hex (no alpha)
         self.class_colors = {}
+        print(f"\n🎨 DEBUG: Assigning colors to {len(all_classes)} classes")
+        print(f"   Safe colors palette length: {len(safe_colors)}")
+        print(f"   Sample safe colors: {safe_colors[:3]}")
+        
         for i, cls in enumerate(all_classes):
             # Cycle through the safe colors palette
             color = safe_colors[i % len(safe_colors)]
             # Double-check the color format
             if not color.startswith('#') or len(color) != 7:
+                print(f"   ⚠️  Color for class '{cls}' is invalid: '{color}' (len={len(color)})")
                 color = '#888888'  # Fallback to gray if something goes wrong
             self.class_colors[cls] = color
+            if i < 3:
+                print(f"   Class '{cls}' -> Color '{color}'")
 
         # Track which classes have patterns
         classes_with_patterns = set()
