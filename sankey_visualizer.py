@@ -74,43 +74,39 @@ class SankeyVisualizer:
         all_classes = sorted(list(all_classes))
         print(f"  Found {len(all_classes)} classes: {all_classes}")
 
-        # Assign colors to classes
-        import matplotlib.colors as mcolors
-        # Get colors and convert to hex format
-        tableau_colors = list(mcolors.TABLEAU_COLORS.values())
-        # Convert matplotlib color names to hex
-        hex_colors = []
-        for color in tableau_colors:
-            if isinstance(color, str) and color.startswith('#'):
-                # Ensure it's a clean 6-character hex (remove alpha if present)
-                hex_clean = color.lstrip('#')
-                if len(hex_clean) == 8:
-                    # Remove alpha channel, keep only RGB
-                    hex_clean = hex_clean[:6]
-                elif len(hex_clean) == 3:
-                    # Expand 3-char hex to 6-char
-                    hex_clean = ''.join([c*2 for c in hex_clean])
-                hex_colors.append(f'#{hex_clean}')
-            else:
-                # Convert matplotlib color name to hex
-                try:
-                    rgb = mcolors.to_rgb(color)
-                    clean_hex = mcolors.rgb2hex(rgb)
-                    # Ensure the hex is clean (6 characters only)
-                    clean_hex = clean_hex.lstrip('#')
-                    if len(clean_hex) == 8:
-                        clean_hex = clean_hex[:6]
-                    hex_colors.append(f'#{clean_hex}')
-                except Exception:
-                    hex_colors.append('#888888')  # Default gray
+        # Assign colors to classes - use predefined clean colors without alpha
+        # Define a safe palette of colors that don't have alpha channels
+        safe_colors = [
+            '#1f77b4',  # Blue
+            '#ff7f0e',  # Orange
+            '#2ca02c',  # Green
+            '#d62728',  # Red
+            '#9467bd',  # Purple
+            '#8c564b',  # Brown
+            '#e377c2',  # Pink
+            '#7f7f7f',  # Gray
+            '#bcbd22',  # Olive
+            '#17becf',  # Cyan
+            '#aec7e8',  # Light Blue
+            '#ffbb78',  # Light Orange
+            '#98df8a',  # Light Green
+            '#ff9896',  # Light Red
+            '#c5b0d5',  # Light Purple
+            '#c49c94',  # Light Brown
+            '#f7b6d2',  # Light Pink
+            '#c7c7c7',  # Light Gray
+            '#dbbd22',  # Darker Olive
+            '#9edae5',  # Light Cyan
+        ]
         
         # Store class colors - ensure all are 6-character hex (no alpha)
         self.class_colors = {}
         for i, cls in enumerate(all_classes):
-            color = hex_colors[i % len(hex_colors)]
-            # Final cleanup: ensure no alpha channel
-            if color.startswith('#') and len(color) == 9:
-                color = color[:7]  # Keep only #RRGGBB
+            # Cycle through the safe colors palette
+            color = safe_colors[i % len(safe_colors)]
+            # Double-check the color format
+            if not color.startswith('#') or len(color) != 7:
+                color = '#888888'  # Fallback to gray if something goes wrong
             self.class_colors[cls] = color
 
         # Track which classes have patterns
