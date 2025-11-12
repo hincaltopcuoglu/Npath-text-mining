@@ -331,7 +331,7 @@ class PatternRanker:
                 confidence = pattern['confidence']
                 lift = pattern['lift']
 
-                print("2d"
+                print(f"{i:2d}. Pattern: '{ngram}' | Score: {score:.3f} | Confidence: {confidence:.3f} | Lift: {lift:.2f}")
             print()
 
     def export_rankings(self, n_values=[2, 3, 4], top_k=50):
