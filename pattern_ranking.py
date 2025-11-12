@@ -2,6 +2,7 @@
 Pattern Ranking System for NPath-like Text Analysis
 Implements multiple scoring metrics for discriminative n-gram ranking
 """
+import os
 import warnings
 from collections import defaultdict
 from typing import Dict, List
@@ -42,11 +43,14 @@ class PatternRanker:
             disc_file = f'{self.results_dir}/{n}gram_discriminative.csv'
 
             try:
-                if pd.io.common.file_exists(counts_file):
+                counts_df = None
+                disc_df = None
+                
+                if os.path.exists(counts_file):
                     counts_df = pd.read_csv(counts_file)
                     print(f"  ✅ Loaded {n}-gram counts: {len(counts_df)} entries")
 
-                if pd.io.common.file_exists(disc_file):
+                if os.path.exists(disc_file):
                     disc_df = pd.read_csv(disc_file)
                     print(f"  ✅ Loaded {n}-gram discriminative: {len(disc_df)} entries")
 
