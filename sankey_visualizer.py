@@ -373,10 +373,27 @@ class SankeyVisualizer:
         # Validate and convert link colors
         validated_link_colors = []
         for color in link_colors:
-            if not color:
-                validated_link_colors.append(f"rgba(136, 136, 136, 0.5)")
+            if not color or not isinstance(color, str):
+                validated_link_colors.append("rgba(136, 136, 136, 0.5)")
             else:
-                validated_link_colors.append(hex_to_rgba(color, alpha=0.5))
+                try:
+                    validated_link_colors.append(hex_to_rgba(color, alpha=0.5))
+                except Exception as e:
+                    print(f"  ⚠️  Warning: Invalid color '{color}', using default: {e}")
+                    validated_link_colors.append("rgba(136, 136, 136, 0.5)")
+        
+        # Ensure we have valid data
+        if len(source) == 0 or len(target) == 0:
+            print("❌ No flows to visualize! Check if sequential patterns exist.")
+            return None
+        
+        if len(validated_link_colors) != len(source):
+            print(f"⚠️  Warning: Color count ({len(validated_link_colors)}) doesn't match flow count ({len(source)})")
+            # Pad or truncate colors to match
+            if len(validated_link_colors) < len(source):
+                validated_link_colors.extend(["rgba(136, 136, 136, 0.5)"] * (len(source) - len(validated_link_colors)))
+            else:
+                validated_link_colors = validated_link_colors[:len(source)]
 
         # Create Sankey diagram
         fig = go.Figure(data=[go.Sankey(
