@@ -541,10 +541,15 @@ class SankeyVisualizer:
         )])
 
         fig.update_layout(
-            title_text="nPath Sequential Pattern Analysis: N-gram Flow → Target Classes",
-            font_size=10,
-            height=800,
-            width=1400
+            title={
+                'text': "nPath Sequential Pattern Analysis: N-gram Flow → Target Classes<br><sub>All n-grams (1-5) and target classes shown in one comprehensive view</sub>",
+                'x': 0.5,
+                'xanchor': 'center',
+                'font': {'size': 16}
+            },
+            font_size=9,
+            height=1200,
+            width=1800
         )
 
         # Save to HTML
