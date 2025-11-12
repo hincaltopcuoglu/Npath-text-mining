@@ -82,7 +82,15 @@ class SankeyVisualizer:
         hex_colors = []
         for color in tableau_colors:
             if isinstance(color, str) and color.startswith('#'):
-                hex_colors.append(color)
+                # Ensure it's a clean 6-character hex (remove alpha if present)
+                hex_clean = color.lstrip('#')
+                if len(hex_clean) == 8:
+                    # Remove alpha channel, keep only RGB
+                    hex_clean = hex_clean[:6]
+                elif len(hex_clean) == 3:
+                    # Expand 3-char hex to 6-char
+                    hex_clean = ''.join([c*2 for c in hex_clean])
+                hex_colors.append(f'#{hex_clean}')
             else:
                 # Convert matplotlib color name to hex
                 try:
@@ -326,14 +334,42 @@ class SankeyVisualizer:
 
         # Prepare data for Plotly Sankey
         node_labels = [node['label'] for node in nodes]
-        # Validate node colors
+        # Validate and convert node colors to rgba format
+        def hex_to_rgba_nodes(hex_color, alpha=0.8):
+            """Convert hex color to rgba format for nodes"""
+            if not hex_color or not isinstance(hex_color, str):
+                return f"rgba(136, 136, 136, {alpha})"
+            
+            hex_color = hex_color.lstrip('#')
+            
+            if len(hex_color) == 8:
+                # 8-character hex with alpha channel
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+                alpha_hex = int(hex_color[6:8], 16)
+                alpha = alpha_hex / 255.0
+            elif len(hex_color) == 6:
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+            elif len(hex_color) == 3:
+                r = int(hex_color[0] * 2, 16)
+                g = int(hex_color[1] * 2, 16)
+                b = int(hex_color[2] * 2, 16)
+            else:
+                return f"rgba(136, 136, 136, {alpha})"
+            
+            return f"rgba({r}, {g}, {b}, {alpha})"
+        
         node_colors = []
         for node in nodes:
             color = self.class_colors.get(node['class'], '#888888')
-            # Ensure color is valid hex
-            if not color or not isinstance(color, str) or not color.startswith('#'):
+            # Ensure color is valid hex and convert to rgba
+            if not color or not isinstance(color, str):
                 color = '#888888'
-            node_colors.append(color)
+            # Convert to rgba format
+            node_colors.append(hex_to_rgba_nodes(color, alpha=0.8))
 
         # Build source, target, value, and color arrays
         source = []
@@ -357,7 +393,15 @@ class SankeyVisualizer:
             hex_color = hex_color.lstrip('#')
             
             # Handle different hex formats
-            if len(hex_color) == 6:
+            if len(hex_color) == 8:
+                # 8-character hex with alpha channel (e.g., #1f77b480)
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+                # Extract alpha from hex (0-255) and convert to 0-1 range
+                alpha_hex = int(hex_color[6:8], 16)
+                alpha = alpha_hex / 255.0
+            elif len(hex_color) == 6:
                 r = int(hex_color[0:2], 16)
                 g = int(hex_color[2:4], 16)
                 b = int(hex_color[4:6], 16)
