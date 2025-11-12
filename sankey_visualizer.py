@@ -541,7 +541,7 @@ class SankeyVisualizer:
         )])
 
         fig.update_layout(
-            title_text="nPath Sequential Pattern Analysis: N-gram Flow (1-gram → 5-gram)",
+            title_text="nPath Sequential Pattern Analysis: N-gram Flow → Target Classes",
             font_size=10,
             height=800,
             width=1400
