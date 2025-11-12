@@ -19,11 +19,15 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-# Download NLTK data (with error handling for Colab)
+# Download NLTK data (comprehensive for Colab)
 try:
     nltk.download('punkt', quiet=True)
+    nltk.download('punkt_tab', quiet=True)
     nltk.download('stopwords', quiet=True)
     nltk.download('wordnet', quiet=True)
+    nltk.download('averaged_perceptron_tagger', quiet=True)
+    nltk.download('omw-1.4', quiet=True)
+    print("✅ NLTK data downloaded successfully")
 except Exception as e:
     print(f"Warning: NLTK download failed: {e}")
     print("This is normal in some environments. Make sure NLTK data is available.")
