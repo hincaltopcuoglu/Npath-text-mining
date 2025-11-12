@@ -11,10 +11,10 @@ from ngram_analyzer import NGramAnalyzer
 
 
 class TextPatternMiner:
-        """
-        Main pattern mining class - Teradata Aster nPath-like approach
-        """
-    
+    """
+    Main pattern mining class - Teradata Aster nPath-like approach
+    """
+
     def __init__(self,
                  data: pd.DataFrame = None,
                  data_path: str = None,
