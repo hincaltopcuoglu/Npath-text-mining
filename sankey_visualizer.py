@@ -75,8 +75,22 @@ class SankeyVisualizer:
 
         # Assign colors to classes
         import matplotlib.colors as mcolors
-        colors = list(mcolors.TABLEAU_COLORS.values())
-        self.class_colors = {cls: colors[i % len(colors)] for i, cls in enumerate(all_classes)}
+        # Get colors and convert to hex format
+        tableau_colors = list(mcolors.TABLEAU_COLORS.values())
+        # Convert matplotlib color names to hex
+        hex_colors = []
+        for color in tableau_colors:
+            if isinstance(color, str) and color.startswith('#'):
+                hex_colors.append(color)
+            else:
+                # Convert matplotlib color name to hex
+                try:
+                    rgb = mcolors.to_rgb(color)
+                    hex_colors.append(mcolors.rgb2hex(rgb))
+                except:
+                    hex_colors.append('#888888')  # Default gray
+        
+        self.class_colors = {cls: hex_colors[i % len(hex_colors)] for i, cls in enumerate(all_classes)}
 
         # Track which classes have patterns
         classes_with_patterns = set()
@@ -311,7 +325,14 @@ class SankeyVisualizer:
 
         # Prepare data for Plotly Sankey
         node_labels = [node['label'] for node in nodes]
-        node_colors = [self.class_colors.get(node['class'], '#888888') for node in nodes]
+        # Validate node colors
+        node_colors = []
+        for node in nodes:
+            color = self.class_colors.get(node['class'], '#888888')
+            # Ensure color is valid hex
+            if not color or not isinstance(color, str) or not color.startswith('#'):
+                color = '#888888'
+            node_colors.append(color)
 
         # Build source, target, value, and color arrays
         source = []
@@ -328,11 +349,34 @@ class SankeyVisualizer:
         # Convert hex colors to rgba format for transparency
         def hex_to_rgba(hex_color, alpha=0.5):
             """Convert hex color to rgba format"""
+            if not hex_color or not isinstance(hex_color, str):
+                return f"rgba(136, 136, 136, {alpha})"  # Default gray
+            
+            # Remove # if present
             hex_color = hex_color.lstrip('#')
-            r = int(hex_color[0:2], 16)
-            g = int(hex_color[2:4], 16)
-            b = int(hex_color[4:6], 16)
+            
+            # Handle different hex formats
+            if len(hex_color) == 6:
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+            elif len(hex_color) == 3:
+                r = int(hex_color[0] * 2, 16)
+                g = int(hex_color[1] * 2, 16)
+                b = int(hex_color[2] * 2, 16)
+            else:
+                # Invalid format, use default
+                return f"rgba(136, 136, 136, {alpha})"
+            
             return f"rgba({r}, {g}, {b}, {alpha})"
+
+        # Validate and convert link colors
+        validated_link_colors = []
+        for color in link_colors:
+            if not color:
+                validated_link_colors.append(f"rgba(136, 136, 136, 0.5)")
+            else:
+                validated_link_colors.append(hex_to_rgba(color, alpha=0.5))
 
         # Create Sankey diagram
         fig = go.Figure(data=[go.Sankey(
@@ -347,7 +391,7 @@ class SankeyVisualizer:
                 source=source,
                 target=target,
                 value=value,
-                color=[hex_to_rgba(color, alpha=0.5) for color in link_colors]  # Add transparency
+                color=validated_link_colors
             )
         )])
 
@@ -406,10 +450,22 @@ class SankeyVisualizer:
         # Convert hex color to rgba for transparency
         def hex_to_rgba(hex_color, alpha=0.5):
             """Convert hex color to rgba format"""
+            if not hex_color or not isinstance(hex_color, str):
+                return f"rgba(136, 136, 136, {alpha})"  # Default gray
+            
             hex_color = hex_color.lstrip('#')
-            r = int(hex_color[0:2], 16)
-            g = int(hex_color[2:4], 16)
-            b = int(hex_color[4:6], 16)
+            
+            if len(hex_color) == 6:
+                r = int(hex_color[0:2], 16)
+                g = int(hex_color[2:4], 16)
+                b = int(hex_color[4:6], 16)
+            elif len(hex_color) == 3:
+                r = int(hex_color[0] * 2, 16)
+                g = int(hex_color[1] * 2, 16)
+                b = int(hex_color[2] * 2, 16)
+            else:
+                return f"rgba(136, 136, 136, {alpha})"
+            
             return f"rgba({r}, {g}, {b}, {alpha})"
 
         class_color = self.class_colors.get(class_name, '#888888')
