@@ -3,20 +3,19 @@ N-Gram Analysis for Opinions Dataset - Optimized for Google Colab
 Creates bigrams, trigrams, 4-grams and performs discriminative analysis
 for text classification (text -> type prediction)
 """
-import pandas as pd
-import numpy as np
+import re
+import warnings
 from collections import Counter, defaultdict
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.preprocessing import LabelEncoder
+
+import matplotlib.pyplot as plt
 import nltk
-from nltk.util import ngrams
+import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-import re
-import matplotlib.pyplot as plt
-import seaborn as sns
+from nltk.util import ngrams
 from tqdm import tqdm
-import warnings
+
+
 warnings.filterwarnings('ignore')
 
 # Download NLTK data (comprehensive for Colab)
@@ -69,7 +68,7 @@ class ColabNgramAnalyzer:
             try:
                 # Fallback: Manual parsing
                 rows = []
-                with open(self.data_path, 'r', encoding='utf-8') as f:
+                with open(self.data_path, encoding='utf-8') as f:
                     for line_num, line in enumerate(f):
                         if line_num > 100000:  # Limit rows for memory
                             break
@@ -384,7 +383,7 @@ class ColabNgramAnalyzer:
         print(f"  Total documents: {sum(self.class_distributions.values())}")
         print(f"  Total n-grams generated: {total_ngrams}")
         print(f"  Total discriminative n-grams: {total_discriminative}")
-        print(f"  Results saved to: colab_results/")
+        print("  Results saved to: colab_results/")
 
 
 if __name__ == '__main__':

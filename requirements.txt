@@ -8,3 +8,6 @@ nltk>=3.8.0
 plotly>=5.14.0
 tqdm>=4.65.0
 
+# Development dependencies
+ruff>=0.1.0
+

@@ -1,15 +1,17 @@
 """
 N-gram Analizi: Her type için ağır baskın n-gram'ları bulma
 """
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Dict, List, Tuple
+
 import pandas as pd
+
 from utils import TextPreprocessor
 
 
 class NGramAnalyzer:
     """Her type için n-gram frequency analizi"""
-    
+
     def __init__(self,
                  preprocessor: TextPreprocessor = None,
                  remove_stopwords: bool = False,
@@ -30,14 +32,14 @@ class NGramAnalyzer:
             )
         else:
             self.preprocessor = preprocessor
-        
+
         self.ngram_counts = {}  # {type: {n: Counter}}
         self.type_doc_counts = {}  # {type: document_count}
-    
+
     def extract_ngrams_from_text(self, text: str, n: int) -> List[Tuple[str, ...]]:
         """Bir text'ten n-gram'ları çıkar"""
         return self.preprocessor.extract_sequences(text, n=n)
-    
+
     def count_ngrams_by_type(self,
                             df: pd.DataFrame,
                             text_column: str,
@@ -57,29 +59,29 @@ class NGramAnalyzer:
         """
         self.ngram_counts = {}
         self.type_doc_counts = {}
-        
+
         types = df[type_column].unique()
-        
+
         for type_name in types:
             type_df = df[df[type_column] == type_name]
             self.type_doc_counts[type_name] = len(type_df)
-            
+
             # For each n value
             type_ngrams = {}
             for n in n_values:
                 ngram_counter = Counter()
-                
+
                 for text in type_df[text_column]:
                     ngrams = self.extract_ngrams_from_text(text, n)
                     for ngram in ngrams:
                         ngram_counter[ngram] += 1
-                
+
                 type_ngrams[n] = ngram_counter
-            
+
             self.ngram_counts[type_name] = type_ngrams
-        
+
         return self.ngram_counts
-    
+
     def calculate_support(self, ngram_count: int, total_docs: int) -> float:
         """
         Support hesapla: Bu n-gram'ın kaç dokümanda göründüğü / toplam doküman
@@ -89,7 +91,7 @@ class NGramAnalyzer:
         Bu yüzden document-level support için ayrı bir metod gerekebilir.
         """
         return ngram_count / total_docs if total_docs > 0 else 0.0
-    
+
     def get_top_ngrams(self,
                       type_name: str,
                       n: int,
@@ -109,21 +111,21 @@ class NGramAnalyzer:
         """
         if type_name not in self.ngram_counts:
             return []
-        
+
         if n not in self.ngram_counts[type_name]:
             return []
-        
+
         ngram_counter = self.ngram_counts[type_name][n]
         total_docs = self.type_doc_counts.get(type_name, 1)
-        
+
         results = []
         for ngram, count in ngram_counter.most_common():
             support = self.calculate_support(count, total_docs)
             if support >= min_support:
                 results.append((ngram, count, support))
-        
+
         return results[:top_n]
-    
+
     def get_all_top_ngrams(self,
                           n: int,
                           min_support: float = 0.0,
@@ -140,7 +142,7 @@ class NGramAnalyzer:
                 type_name, n, min_support, top_n
             )
         return results
-    
+
     def print_ngram_summary(self,
                            n: int,
                            min_support: float = 0.0,
@@ -149,20 +151,20 @@ class NGramAnalyzer:
         print(f"\n{'='*80}")
         print(f"{n}-GRAM ANALİZİ (Min Support: {min_support:.2%}, Top {top_n})")
         print(f"{'='*80}")
-        
+
         all_top = self.get_all_top_ngrams(n, min_support, top_n)
-        
+
         for type_name, ngrams in all_top.items():
             print(f"\n📊 TYPE: {type_name}")
             print(f"   Toplam Doküman: {self.type_doc_counts.get(type_name, 0)}")
             print(f"   Bulunan {n}-gram sayısı: {len(ngrams)}")
             print(f"\n   Top {min(top_n, len(ngrams))} {n}-gram:")
             print(f"   {'-'*76}")
-            
+
             for i, (ngram, count, support) in enumerate(ngrams[:top_n], 1):
                 ngram_str = ' '.join(ngram)
                 print(f"   {i:2d}. [{support:6.2%}] (count: {count:4d})  {ngram_str}")
-    
+
     def export_ngrams_to_csv(self,
                            n: int,
                            output_path: str = None,
@@ -171,10 +173,10 @@ class NGramAnalyzer:
         """N-gram'ları CSV olarak export et"""
         if output_path is None:
             output_path = f'ngrams_{n}gram.csv'
-        
+
         rows = []
         all_top = self.get_all_top_ngrams(n, min_support, top_n)
-        
+
         for type_name, ngrams in all_top.items():
             for ngram, count, support in ngrams:
                 rows.append({
@@ -185,12 +187,12 @@ class NGramAnalyzer:
                     'support': support,
                     'total_docs': self.type_doc_counts.get(type_name, 0)
                 })
-        
+
         df = pd.DataFrame(rows)
         df.to_csv(output_path, index=False, encoding='utf-8')
         print(f"✓ {len(df)} n-gram exported to {output_path}")
         return df
-    
+
     def calculate_discriminative_score(self, ngram: Tuple[str, ...], type_name: str) -> float:
         """
         Bir n-gram'ın discriminative score'unu hesapla
@@ -272,7 +274,7 @@ class NGramAnalyzer:
         print(f"DISCRIMINATIVE {n}-GRAM ANALİZİ")
         print(f"{'='*80}")
         print(f"Min Support: {min_support:.2%} | Discriminative Threshold: {discriminative_threshold}")
-        print(f"Score = Support(type) / Avg_Support(other_types)")
+        print("Score = Support(type) / Avg_Support(other_types)")
         print(f"Score ≥ {discriminative_threshold} = Bu type'a çok özgü")
 
         discriminative = self.find_discriminative_ngrams(n, min_support, discriminative_threshold, top_n)

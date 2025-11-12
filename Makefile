@@ -214,6 +214,38 @@ analyze-discriminative: ## Discriminative n-gram analizi yap (İkinci aşama)
 	$(PYTHON) analyze_discriminative.py
 	@echo "$(GREEN)✓ Discriminative analizi tamamlandı!$(NC)"
 
+# Code Quality with Ruff
+lint: ## Lint code with Ruff
+	@echo "$(BLUE)Ruff linting başlatılıyor...$(NC)"
+	@if command -v ruff >/dev/null 2>&1; then \
+		ruff check . --fix; \
+		echo "$(GREEN)✓ Ruff linting tamamlandı!$(NC)"; \
+	else \
+		echo "$(YELLOW)Ruff yüklü değil. Kurulumu: pip install ruff$(NC)"; \
+		exit 1; \
+	fi
+
+format: ## Format code with Ruff
+	@echo "$(BLUE)Ruff formatting başlatılıyor...$(NC)"
+	@if command -v ruff >/dev/null 2>&1; then \
+		ruff format .; \
+		echo "$(GREEN)✓ Ruff formatting tamamlandı!$(NC)"; \
+	else \
+		echo "$(YELLOW)Ruff yüklü değil. Kurulumu: pip install ruff$(NC)"; \
+		exit 1; \
+	fi
+
+lint-check: ## Check code without fixing
+	@echo "$(BLUE)Ruff check başlatılıyor...$(NC)"
+	@if command -v ruff >/dev/null 2>&1; then \
+		ruff check .; \
+	else \
+		echo "$(YELLOW)Ruff yüklü değil. Kurulumu: pip install ruff$(NC)"; \
+		exit 1; \
+	fi
+
+quality: lint format ## Run both linting and formatting
+
 # Hızlı başlangıç: Her şeyi hazırla
 all: setup create-sample-data run ## Her şeyi hazırla ve çalıştır (setup + veri + analiz)
 

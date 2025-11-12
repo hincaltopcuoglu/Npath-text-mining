@@ -1,13 +1,15 @@
 """
 Ana Text Pattern Miner: nPath-like pattern mining pipeline
 """
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
-from typing import Dict, List, Tuple, Optional
-from utils import TextPreprocessor
+
 from graph_builder import CategoryGraphBuilder
-from pattern_finder import PatternFinder
-from visualizer import PatternVisualizer
 from ngram_analyzer import NGramAnalyzer
+from pattern_finder import PatternFinder
+from utils import TextPreprocessor
+from visualizer import PatternVisualizer
 
 
 class TextPatternMiner:
@@ -40,26 +42,26 @@ class TextPatternMiner:
             self.df = pd.read_csv(data_path)
         else:
             raise ValueError("Either 'data' or 'data_path' must be provided")
-        
+
         self.text_column = text_column
         self.category_column = category_column
-        
+
         # Preprocessor
         self.preprocessor = TextPreprocessor(
             remove_stopwords=remove_stopwords,
             lowercase=lowercase,
             language=language
         )
-        
+
         # Graph builder
         self.graph_builder = CategoryGraphBuilder()
-        
+
         # Pattern finder (graph builder ile initialize edilecek)
         self.pattern_finder = None
-        
+
         # Visualizer
         self.visualizer = PatternVisualizer()
-        
+
         # N-gram analyzer
         self.ngram_analyzer = NGramAnalyzer(
             preprocessor=self.preprocessor,
@@ -67,10 +69,10 @@ class TextPatternMiner:
             lowercase=lowercase,
             language=language
         )
-        
+
         # Processed data
         self.processed_df = None
-    
+
     def preprocess(self):
         """Process data and extract sequences"""
         print("Preprocessing text data...")
@@ -79,12 +81,12 @@ class TextPatternMiner:
         )
         print(f"Processed {len(self.processed_df)} documents")
         return self.processed_df
-    
+
     def build_graphs(self, sequence_column: str = 'tokens'):
         """Build graphs for each category"""
         if self.processed_df is None:
             self.preprocess()
-        
+
         print("Building category graphs...")
         graphs = self.graph_builder.build_category_graphs(
             self.processed_df,
@@ -92,16 +94,16 @@ class TextPatternMiner:
             self.category_column,
             sequence_column=sequence_column
         )
-        
+
         print(f"Built graphs for {len(graphs)} categories")
         for category, stats in self.graph_builder.category_stats.items():
             print(f"  {category}: {stats['num_nodes']} nodes, {stats['num_edges']} edges")
-        
+
         # Initialize pattern finder
         self.pattern_finder = PatternFinder(self.graph_builder)
-        
+
         return graphs
-    
+
     def mine_patterns(self,
                      min_support: float = 0.01,
                      max_path_length: int = 5,
@@ -121,12 +123,12 @@ class TextPatternMiner:
         """
         if self.graph_builder.graphs == {}:
             self.build_graphs(sequence_column=sequence_column)
-        
+
         print(f"Mining patterns (min_support={min_support}, max_length={max_path_length})...")
-        
+
         categories = self.processed_df[self.category_column].unique()
         patterns_by_category = {}
-        
+
         for category in categories:
             print(f"  Finding patterns for category: {category}")
             patterns = self.pattern_finder.find_category_specific_patterns(
@@ -137,9 +139,9 @@ class TextPatternMiner:
             )
             patterns_by_category[category] = patterns
             print(f"    Found {len(patterns)} patterns")
-        
+
         return patterns_by_category
-    
+
     def find_discriminative_patterns(self,
                                     min_support: float = 0.01,
                                     max_path_length: int = 5,
@@ -153,9 +155,9 @@ class TextPatternMiner:
         """
         if self.graph_builder.graphs == {}:
             self.build_graphs(sequence_column=sequence_column)
-        
+
         print("Finding discriminative patterns...")
-        
+
         categories = list(self.processed_df[self.category_column].unique())
         discriminative = self.pattern_finder.find_discriminative_patterns(
             categories,
@@ -163,9 +165,9 @@ class TextPatternMiner:
             max_path_length=max_path_length,
             top_n=top_n
         )
-        
+
         return discriminative
-    
+
     def compare_categories(self,
                           min_support: float = 0.01,
                           max_path_length: int = 5) -> Dict:
@@ -177,27 +179,27 @@ class TextPatternMiner:
         """
         if self.graph_builder.graphs == {}:
             self.build_graphs()
-        
+
         categories = list(self.processed_df[self.category_column].unique())
         comparison = self.pattern_finder.compare_patterns_across_categories(
             categories,
             min_support=min_support,
             max_path_length=max_path_length
         )
-        
+
         return comparison
-    
-    def visualize_graphs(self, 
+
+    def visualize_graphs(self,
                         categories: Optional[List[str]] = None,
                         top_n_nodes: int = 30,
                         top_n_edges: int = 50):
         """Kategori graph'larını görselleştir"""
         if self.graph_builder.graphs == {}:
             self.build_graphs()
-        
+
         if categories is None:
             categories = list(self.graph_builder.graphs.keys())
-        
+
         figures = []
         for category in categories:
             if category in self.graph_builder.graphs:
@@ -208,63 +210,63 @@ class TextPatternMiner:
                     top_n_edges=top_n_edges
                 )
                 figures.append((category, fig))
-        
+
         return figures
-    
+
     def visualize_patterns(self,
                           patterns: Optional[Dict[str, List[Tuple[List[str], float]]]] = None,
                           top_n: int = 10):
         """Pattern'leri görselleştir"""
         if patterns is None:
             patterns = self.mine_patterns()
-        
+
         return self.visualizer.visualize_patterns_comparison(patterns, top_n=top_n)
-    
+
     def visualize_discriminative(self,
                                 discriminative_patterns: Optional[Dict] = None,
                                 top_n: int = 15):
         """Discriminative pattern'leri görselleştir"""
         if discriminative_patterns is None:
             discriminative_patterns = self.find_discriminative_patterns()
-        
+
         return self.visualizer.visualize_discriminative_patterns(
             discriminative_patterns, top_n=top_n
         )
-    
+
     def visualize_statistics(self):
         """Kategori istatistiklerini görselleştir"""
         if self.graph_builder.category_stats == {}:
             self.build_graphs()
-        
+
         return self.visualizer.visualize_category_statistics(
             self.graph_builder.category_stats
         )
-    
+
     def visualize_heatmap(self,
                          patterns: Optional[Dict[str, List[Tuple[List[str], float]]]] = None,
                          top_n_patterns: int = 20):
         """Pattern heatmap görselleştir"""
         if patterns is None:
             patterns = self.mine_patterns()
-        
+
         return self.visualizer.visualize_pattern_heatmap(patterns, top_n_patterns)
-    
+
     def get_summary(self) -> Dict:
         """Summary statistics"""
         if self.processed_df is None:
             self.preprocess()
-        
+
         if self.graph_builder.category_stats == {}:
             self.build_graphs()
-        
+
         summary = {
             'total_documents': len(self.processed_df),
             'categories': list(self.processed_df[self.category_column].unique()),
             'category_stats': self.graph_builder.category_stats
         }
-        
+
         return summary
-    
+
     def export_patterns(self,
                        patterns: Dict[str, List[Tuple[List[str], float]]],
                        output_path: str = 'patterns.csv'):
@@ -278,12 +280,12 @@ class TextPatternMiner:
                     'pattern_length': len(pattern),
                     'score': score
                 })
-        
+
         df = pd.DataFrame(rows)
         df.to_csv(output_path, index=False)
         print(f"Exported {len(df)} patterns to {output_path}")
         return df
-    
+
     def analyze_ngrams(self,
                       n_values: List[int] = [2, 3, 4],
                       min_support: float = 0.0,
@@ -302,7 +304,7 @@ class TextPatternMiner:
         print("=" * 80)
         print("N-GRAM ANALYSIS - PHASE 1")
         print("=" * 80)
-        
+
         # Count n-grams
         ngram_counts = self.ngram_analyzer.count_ngrams_by_type(
             self.df,
@@ -310,7 +312,7 @@ class TextPatternMiner:
             self.category_column,
             n_values=n_values
         )
-        
+
         # Print results for each n value
         for n in n_values:
             self.ngram_analyzer.print_ngram_summary(
@@ -318,9 +320,9 @@ class TextPatternMiner:
                 min_support=min_support,
                 top_n=top_n
             )
-        
+
         return ngram_counts
-    
+
     def export_ngrams(self,
                      n_values: List[int] = [2, 3, 4],
                      min_support: float = 0.0,
@@ -328,19 +330,19 @@ class TextPatternMiner:
         """Export n-grams to CSV"""
         # Run analysis first
         self.analyze_ngrams(n_values, min_support, top_n)
-        
+
         # Export for each n value
         exported_files = []
         for n in n_values:
             output_path = f'ngrams_{n}gram.csv'
-            df = self.ngram_analyzer.export_ngrams_to_csv(
+            self.ngram_analyzer.export_ngrams_to_csv(
                 n=n,
                 output_path=output_path,
                 min_support=min_support,
                 top_n=top_n
             )
             exported_files.append(output_path)
-        
+
         return exported_files
 
     def analyze_discriminative_ngrams(self,
@@ -394,7 +396,7 @@ class TextPatternMiner:
         if output_path is None:
             output_path = f'discriminative_{n}grams.csv'
 
-        df = self.ngram_analyzer.export_discriminative_ngrams(
+        self.ngram_analyzer.export_discriminative_ngrams(
             n=n,
             output_path=output_path,
             min_support=min_support,

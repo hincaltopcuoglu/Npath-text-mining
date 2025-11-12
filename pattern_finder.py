@@ -1,22 +1,23 @@
 """
 nPath-like pattern finding: Kategoriye özgü pattern'leri bulma
 """
-from collections import Counter, defaultdict
-from typing import List, Dict, Tuple, Set
-import pandas as pd
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple
+
 import networkx as nx
+
 from graph_builder import CategoryGraphBuilder
 
 
 class PatternFinder:
     """Kategoriye özgü pattern'leri bulma (nPath benzeri)"""
-    
+
     def __init__(self, graph_builder: CategoryGraphBuilder):
         self.graph_builder = graph_builder
         self.patterns = {}  # {category: {pattern: score}}
-    
-    def calculate_path_score(self, 
-                            path: List[str], 
+
+    def calculate_path_score(self,
+                            path: List[str],
                             graph: nx.DiGraph) -> float:
         """
         Bir path'in skorunu hesapla (edge weight'lerinin çarpımı veya toplamı)
@@ -30,21 +31,21 @@ class PatternFinder:
         """
         if len(path) < 2:
             return 0.0
-        
+
         # Edge weight'lerini topla
         total_weight = 0.0
         for i in range(len(path) - 1):
             source = path[i]
             target = path[i + 1]
-            
+
             if graph.has_edge(source, target):
                 weight = graph[source][target].get('weight', 0.0)
                 total_weight += weight
             else:
                 return 0.0  # Invalid path
-        
+
         return total_weight
-    
+
     def find_category_specific_patterns(self,
                                         category: str,
                                         min_support: float = 0.01,
@@ -64,35 +65,35 @@ class PatternFinder:
         """
         if category not in self.graph_builder.graphs:
             return []
-        
+
         graph = self.graph_builder.graphs[category]
         patterns = []
-        
+
         # Find paths starting from all nodes
         nodes = list(graph.nodes())
-        
+
         # Short paths (2-3 nodes)
         for length in range(2, min(max_path_length + 1, 4)):
             for i, start_node in enumerate(nodes):
                 # Find paths using DFS
                 paths = self._dfs_paths(graph, start_node, length, min_support)
-                
+
                 for path in paths:
                     score = self.calculate_path_score(path, graph)
                     if score >= min_support:
                         patterns.append((path, score))
-        
+
         # For longer paths (start from top edges)
         top_edges = self.graph_builder.get_top_edges(category, top_n=100)
         visited_paths = set()
-        
+
         for (u, v), weight in top_edges:
             if weight < min_support:
                 continue
-            
+
             # Extend from this edge
             extended_paths = self._extend_path(graph, [u, v], max_path_length, min_support)
-            
+
             for path in extended_paths:
                 path_tuple = tuple(path)
                 if path_tuple not in visited_paths:
@@ -100,26 +101,26 @@ class PatternFinder:
                     score = self.calculate_path_score(path, graph)
                     if score >= min_support:
                         patterns.append((path, score))
-        
+
         # Sort by score
         patterns.sort(key=lambda x: x[1], reverse=True)
-        
+
         return patterns[:top_n]
-    
-    def _dfs_paths(self, 
-                   graph: nx.DiGraph, 
-                   start: str, 
+
+    def _dfs_paths(self,
+                   graph: nx.DiGraph,
+                   start: str,
                    max_length: int,
                    min_weight: float) -> List[List[str]]:
         """DFS ile path'leri bul"""
         paths = []
-        
+
         def dfs(node: str, current_path: List[str], visited: Set[str]):
             if len(current_path) >= max_length:
                 if len(current_path) >= 2:
                     paths.append(current_path.copy())
                 return
-            
+
             for neighbor in graph.successors(node):
                 if neighbor not in visited and graph.has_edge(node, neighbor):
                     edge_weight = graph[node][neighbor].get('weight', 0.0)
@@ -129,10 +130,10 @@ class PatternFinder:
                         dfs(neighbor, current_path, visited)
                         current_path.pop()
                         visited.remove(neighbor)
-        
+
         dfs(start, [start], {start})
         return paths
-    
+
     def _extend_path(self,
                     graph: nx.DiGraph,
                     path: List[str],
@@ -140,12 +141,12 @@ class PatternFinder:
                     min_weight: float) -> List[List[str]]:
         """Mevcut path'i uzat"""
         extended = [path.copy()]
-        
+
         if len(path) >= max_length:
             return extended
-        
+
         last_node = path[-1]
-        
+
         for neighbor in graph.successors(last_node):
             if neighbor not in path:
                 edge_weight = graph[last_node][neighbor].get('weight', 0.0)
@@ -155,9 +156,9 @@ class PatternFinder:
                     # Recursive olarak daha fazla uzat
                     if len(new_path) < max_length:
                         extended.extend(self._extend_path(graph, new_path, max_length, min_weight))
-        
+
         return extended
-    
+
     def compare_patterns_across_categories(self,
                                            categories: List[str],
                                            min_support: float = 0.01,
@@ -173,25 +174,25 @@ class PatternFinder:
         """
         all_patterns = {}
         pattern_to_categories = defaultdict(list)
-        
+
         # Find patterns for each category
         for category in categories:
             patterns = self.find_category_specific_patterns(
                 category, min_support, max_path_length
             )
             all_patterns[category] = patterns
-            
+
             # Pattern'leri kaydet
             for pattern, score in patterns:
                 pattern_key = tuple(pattern)
                 pattern_to_categories[pattern_key].append((category, score))
-        
+
         # Ortak pattern'leri bul
         common_patterns = {
             pattern: cats for pattern, cats in pattern_to_categories.items()
             if len(cats) > 1
         }
-        
+
         # Benzersiz pattern'leri bul
         unique_patterns = {}
         for category in categories:
@@ -200,13 +201,13 @@ class PatternFinder:
                 if tuple(pattern) not in common_patterns
             ]
             unique_patterns[category] = unique
-        
+
         return {
             'category_specific': all_patterns,
             'common_patterns': common_patterns,
             'unique_patterns': unique_patterns
         }
-    
+
     def find_discriminative_patterns(self,
                                     categories: List[str],
                                     min_support: float = 0.01,
@@ -220,41 +221,41 @@ class PatternFinder:
             {category: [(pattern, discriminative_score), ...]}
         """
         discriminative = {}
-        
+
         for category in categories:
             if category not in self.graph_builder.graphs:
                 continue
-            
+
             category_patterns = self.find_category_specific_patterns(
                 category, min_support, max_path_length, top_n=100
             )
-            
-            category_graph = self.graph_builder.graphs[category]
+
+            # category_graph = self.graph_builder.graphs[category]  # Unused variable
             other_graphs = {
-                c: g for c, g in self.graph_builder.graphs.items() 
+                c: g for c, g in self.graph_builder.graphs.items()
                 if c != category
             }
-            
+
             discriminative_patterns = []
-            
+
             for pattern, score in category_patterns:
                 # Calculate this pattern's score in other categories
                 other_scores = []
                 for other_cat, other_graph in other_graphs.items():
                     other_score = self.calculate_path_score(pattern, other_graph)
                     other_scores.append(other_score)
-                
+
                 # Discriminative score: category_score / (avg_other_score + epsilon)
                 avg_other = sum(other_scores) / len(other_scores) if other_scores else 0.0
                 epsilon = 0.0001
                 discriminative_score = score / (avg_other + epsilon)
-                
+
                 if discriminative_score > 1.5:  # At least 1.5x higher
                     discriminative_patterns.append((pattern, discriminative_score))
-            
+
             # Select most discriminative patterns
             discriminative_patterns.sort(key=lambda x: x[1], reverse=True)
             discriminative[category] = discriminative_patterns[:top_n]
-        
+
         return discriminative
 

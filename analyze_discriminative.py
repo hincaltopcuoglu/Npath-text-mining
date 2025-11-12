@@ -2,8 +2,11 @@
 Discriminative N-gram Analizi Scripti - İkinci Aşama
 Hangi n-gram'ların hangi type'a özgü olduğunu bulur
 """
+
 import pandas as pd
+
 from text_pattern_miner import TextPatternMiner
+
 
 def main():
     """Run discriminative n-gram analysis"""
@@ -20,7 +23,7 @@ def main():
         # Parse file manually first
         import csv
         rows = []
-        with open(data_path, 'r', encoding='utf-8') as f:
+        with open(data_path, encoding='utf-8') as f:
             for line_num, line in enumerate(f):
                 line = line.strip()
                 if not line:
@@ -42,7 +45,7 @@ def main():
                         parsed = next(reader)
                         if len(parsed) >= 5:
                             rows.append(parsed[:5])
-                    except:
+                    except Exception:
                         continue
                 else:
                     # Take first 5 parts for other cases
@@ -83,7 +86,7 @@ def main():
     # Discriminative analysis for each n-gram size
     for n in [2, 3, 4]:
         print(f"\n--- {n}-GRAM DISCRIMINATIVE ANALYSIS ---")
-        discriminative = miner.analyze_discriminative_ngrams(
+        miner.analyze_discriminative_ngrams(
             n=n,
             min_support=0.01,
             discriminative_threshold=2.0,  # Stricter threshold
@@ -116,7 +119,7 @@ def main():
     for file in exported_files:
         print(f"  - {file}")
 
-    print(f"\nAnalysis Summary:")
+    print("\nAnalysis Summary:")
     print(f"  Total documents: {len(df)}")
     print(f"  Number of types: {len(df['type'].unique())}")
     print(f"  Types: {', '.join(df['type'].unique())}")

@@ -2,14 +2,14 @@
 Pattern Ranking System for NPath-like Text Analysis
 Implements multiple scoring metrics for discriminative n-gram ranking
 """
-import pandas as pd
-import numpy as np
-from collections import defaultdict, Counter
-from typing import Dict, List, Tuple, Set
-import matplotlib.pyplot as plt
-import seaborn as sns
-from tqdm import tqdm
 import warnings
+from collections import defaultdict
+from typing import Dict, List
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+
 warnings.filterwarnings('ignore')
 
 class PatternRanker:
@@ -315,7 +315,7 @@ class PatternRanker:
 
         print(f"📊 Classes analyzed: {len(rankings)}")
         print(f"🎯 Top {top_k} patterns per class")
-        print(f"📈 Scoring metrics: Confidence, Lift, Rarity, Discriminative, Combined")
+        print("📈 Scoring metrics: Confidence, Lift, Rarity, Discriminative, Combined")
         print()
 
         for class_name, patterns in rankings.items():
@@ -455,7 +455,7 @@ class PatternRanker:
         print(f"  Classes analyzed: {len(self.class_stats)}")
         print(f"  Total documents: {self.global_stats.get('total_docs', 0)}")
         print(f"  Rankings exported to: {self.results_dir}/")
-        print(f"  Visualizations created: top_*gram_patterns_comparison.png")
+        print("  Visualizations created: top_*gram_patterns_comparison.png")
 
 
 if __name__ == '__main__':
