@@ -56,7 +56,7 @@ class PatternRanker:
 
                     # Store in pattern_data
                     self.pattern_data[n] = {
-                        'counts': counts_df if 'counts_df' in locals() else None,
+                        'counts': counts_df,
                         'discriminative': disc_df
                     }
 
