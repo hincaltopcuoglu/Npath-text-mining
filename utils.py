@@ -8,7 +8,7 @@ from nltk.corpus import stopwords
 from typing import List, Tuple
 import pandas as pd
 
-# NLTK data indirme (ilk çalıştırmada gerekli)
+# Download NLTK data (required on first run)
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -40,7 +40,7 @@ class TextPreprocessor:
         self.min_word_length = min_word_length
         
         if language == 'turkish':
-            # Türkçe stopwords (basit liste, gerekirse genişletilebilir)
+            # Turkish stopwords (simple list, can be extended if needed)
             self.stopwords = set(['ve', 'ile', 'bir', 'bu', 'şu', 'o', 'de', 'da', 'ki', 'mi', 'mu', 'mü'])
         else:
             self.stopwords = set(stopwords.words('english'))
@@ -52,14 +52,14 @@ class TextPreprocessor:
         
         text = str(text)
         
-        # Küçük harfe çevir
+        # Convert to lowercase
         if self.lowercase:
             text = text.lower()
         
-        # Özel karakterleri temizle (noktalama işaretlerini koru)
+        # Clean special characters (preserve punctuation)
         text = re.sub(r'[^\w\s\.\,\!\?]', ' ', text)
         
-        # Fazla boşlukları temizle
+        # Clean extra spaces
         text = re.sub(r'\s+', ' ', text).strip()
         
         return text
@@ -68,26 +68,26 @@ class TextPreprocessor:
         """Cümleyi kelimelere ayır"""
         text = self.clean_text(text)
         
-        # Cümle tokenization
+        # Sentence tokenization
         sentences = sent_tokenize(text)
         
         all_tokens = []
         for sentence in sentences:
-            # Kelime tokenization
+            # Word tokenization
             tokens = word_tokenize(sentence)
             
-            # Filtreleme
+            # Filtering
             filtered_tokens = []
             for token in tokens:
-                # Noktalama işaretlerini atla
+                # Skip punctuation marks
                 if token in ['.', ',', '!', '?', ';', ':']:
                     continue
                 
-                # Minimum uzunluk kontrolü
+                # Minimum length check
                 if len(token) < self.min_word_length:
                     continue
                 
-                # Stopword kontrolü
+                # Stopword check
                 if self.remove_stopwords and token in self.stopwords:
                     continue
                 

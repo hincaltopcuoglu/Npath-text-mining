@@ -41,7 +41,7 @@ class PatternFinder:
                 weight = graph[source][target].get('weight', 0.0)
                 total_weight += weight
             else:
-                return 0.0  # Path geçersiz
+                return 0.0  # Invalid path
         
         return total_weight
     
@@ -68,13 +68,13 @@ class PatternFinder:
         graph = self.graph_builder.graphs[category]
         patterns = []
         
-        # Tüm node'lardan başlayarak path'leri bul
+        # Find paths starting from all nodes
         nodes = list(graph.nodes())
         
-        # Kısa path'ler (2-3 node)
+        # Short paths (2-3 nodes)
         for length in range(2, min(max_path_length + 1, 4)):
             for i, start_node in enumerate(nodes):
-                # DFS ile path'leri bul
+                # Find paths using DFS
                 paths = self._dfs_paths(graph, start_node, length, min_support)
                 
                 for path in paths:
@@ -82,7 +82,7 @@ class PatternFinder:
                     if score >= min_support:
                         patterns.append((path, score))
         
-        # Uzun path'ler için (top edges'den başla)
+        # For longer paths (start from top edges)
         top_edges = self.graph_builder.get_top_edges(category, top_n=100)
         visited_paths = set()
         
@@ -90,7 +90,7 @@ class PatternFinder:
             if weight < min_support:
                 continue
             
-            # Bu edge'den başlayarak uzat
+            # Extend from this edge
             extended_paths = self._extend_path(graph, [u, v], max_path_length, min_support)
             
             for path in extended_paths:
@@ -101,7 +101,7 @@ class PatternFinder:
                     if score >= min_support:
                         patterns.append((path, score))
         
-        # Skora göre sırala
+        # Sort by score
         patterns.sort(key=lambda x: x[1], reverse=True)
         
         return patterns[:top_n]
@@ -174,7 +174,7 @@ class PatternFinder:
         all_patterns = {}
         pattern_to_categories = defaultdict(list)
         
-        # Her kategori için pattern'leri bul
+        # Find patterns for each category
         for category in categories:
             patterns = self.find_category_specific_patterns(
                 category, min_support, max_path_length
@@ -238,7 +238,7 @@ class PatternFinder:
             discriminative_patterns = []
             
             for pattern, score in category_patterns:
-                # Bu pattern'in diğer kategorilerdeki skorunu hesapla
+                # Calculate this pattern's score in other categories
                 other_scores = []
                 for other_cat, other_graph in other_graphs.items():
                     other_score = self.calculate_path_score(pattern, other_graph)
@@ -249,10 +249,10 @@ class PatternFinder:
                 epsilon = 0.0001
                 discriminative_score = score / (avg_other + epsilon)
                 
-                if discriminative_score > 1.5:  # En az 1.5x daha yüksek
+                if discriminative_score > 1.5:  # At least 1.5x higher
                     discriminative_patterns.append((pattern, discriminative_score))
             
-            # En discriminative pattern'leri seç
+            # Select most discriminative patterns
             discriminative_patterns.sort(key=lambda x: x[1], reverse=True)
             discriminative[category] = discriminative_patterns[:top_n]
         

@@ -64,7 +64,7 @@ class NGramAnalyzer:
             type_df = df[df[type_column] == type_name]
             self.type_doc_counts[type_name] = len(type_df)
             
-            # Her n değeri için
+            # For each n value
             type_ngrams = {}
             for n in n_values:
                 ngram_counter = Counter()
@@ -223,7 +223,7 @@ class NGramAnalyzer:
             return 0.0
 
         avg_other_support = sum(other_supports) / len(other_supports)
-        epsilon = 0.0001  # Sıfır bölme önleme
+        epsilon = 0.0001  # Prevent division by zero
 
         return type_support / (avg_other_support + epsilon)
 
@@ -243,7 +243,7 @@ class NGramAnalyzer:
         for type_name in self.ngram_counts.keys():
             type_discriminatives = []
 
-            # Bu type'taki tüm n-gram'ları kontrol et
+            # Check all n-grams in this type
             if n in self.ngram_counts[type_name]:
                 counter = self.ngram_counts[type_name][n]
 
@@ -256,7 +256,7 @@ class NGramAnalyzer:
                         if disc_score >= discriminative_threshold:
                             type_discriminatives.append((ngram, disc_score, support))
 
-            # Score'a göre sırala
+            # Sort by score
             type_discriminatives.sort(key=lambda x: x[1], reverse=True)
             discriminative_ngrams[type_name] = type_discriminatives[:top_n]
 

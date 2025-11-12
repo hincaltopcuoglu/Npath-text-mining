@@ -7,23 +7,23 @@ import sys
 from text_pattern_miner import TextPatternMiner
 
 def main():
-    """N-gram analizi çalıştır"""
+    """Run n-gram analysis"""
     
-    # Veri yükleme
+    # Data loading
     if len(sys.argv) > 1:
         data_path = sys.argv[1]
     else:
         data_path = 'data/raw/opinions.csv'
     
     print("=" * 80)
-    print("N-GRAM ANALİZİ - İLK AŞAMA")
+    print("N-GRAM ANALYSIS - PHASE 1")
     print("=" * 80)
-    print(f"Veri dosyası: {data_path}")
+    print(f"Data file: {data_path}")
     print()
     
-    # Veriyi yükle - CSV parsing sorununu çöz
+    # Load data - solve CSV parsing issues
     try:
-        # Önce dosyayı manuel parse et - daha akıllı parsing
+        # Parse file manually - smarter parsing
         rows = []
         with open(data_path, 'r', encoding='utf-8') as f:
             for line_num, line in enumerate(f):
@@ -31,18 +31,18 @@ def main():
                 if not line:
                     continue
 
-                # Satırın sonunda fazla ; varsa temizle
+                # Clean extra ; at end of line
                 while line.endswith(';'):
                     line = line[:-1]
 
-                # Virgül sayısına göre ayır
+                # Split by comma count
                 parts = line.split(',')
                 if len(parts) == 5:
-                    # Normal satır: id,topic_id,text,type,effectiveness
+                    # Normal row: id,topic_id,text,type,effectiveness
                     rows.append(parts)
                 elif len(parts) == 1:
-                    # Tek parçalı satır - muhtemelen quotes içinde çoklu alan
-                    # Tekrar parse et
+                    # Single part row - probably multiple fields in quotes
+                    # Parse again
                     try:
                         reader = csv.reader([line], quotechar='"', delimiter=',')
                         parsed = next(reader)
@@ -52,18 +52,18 @@ def main():
                         # Parse edilemezse atla
                         continue
                 else:
-                    # Diğer durumlar için ilk 5 parçayı al
+                    # Take first 5 parts for other cases
                     rows.append(parts[:5])
 
         df = pd.DataFrame(rows, columns=['id', 'topic_id', 'text', 'type', 'effectiveness'])
-        # Boş satırları temizle
+        # Clean empty rows
         df = df.dropna(subset=['text', 'type'])
-        print(f"✓ {len(df)} doküman yüklendi")
+        print(f"✓ {len(df)} documents loaded")
         
-        # Kolon isimlerini kontrol et
-        print(f"Kolonlar: {list(df.columns)}")
+        # Check column names
+        print(f"Columns: {list(df.columns)}")
         
-        # Type kolonunu bul (type, category, label, vb.)
+        # Find type column (type, category, label, etc.)
         type_column = None
         for col in ['type', 'category', 'label', 'class']:
             if col in df.columns:
@@ -71,11 +71,11 @@ def main():
                 break
         
         if type_column is None:
-            print("HATA: 'type', 'category', 'label' veya 'class' kolonu bulunamadı!")
-            print(f"Mevcut kolonlar: {list(df.columns)}")
+            print("ERROR: 'type', 'category', 'label' or 'class' column not found!")
+            print(f"Available columns: {list(df.columns)}")
             return
         
-        # Text kolonunu bul
+        # Find text column
         text_column = None
         for col in ['text', 'sentence', 'content', 'opinion']:
             if col in df.columns:
@@ -83,43 +83,43 @@ def main():
                 break
         
         if text_column is None:
-            print("HATA: 'text', 'sentence', 'content' veya 'opinion' kolonu bulunamadı!")
-            print(f"Mevcut kolonlar: {list(df.columns)}")
+            print("ERROR: 'text', 'sentence', 'content' or 'opinion' column not found!")
+            print(f"Available columns: {list(df.columns)}")
             return
         
-        print(f"✓ Text kolonu: {text_column}")
-        print(f"✓ Type kolonu: {type_column}")
-        print(f"✓ Type'lar: {df[type_column].unique()}")
+        print(f"✓ Text column: {text_column}")
+        print(f"✓ Type column: {type_column}")
+        print(f"✓ Types: {df[type_column].unique()}")
         print()
         
     except FileNotFoundError:
-        print(f"HATA: Dosya bulunamadı: {data_path}")
+        print(f"ERROR: File not found: {data_path}")
         return
     except Exception as e:
-        print(f"HATA: {e}")
+        print(f"ERROR: {e}")
         return
     
-    # TextPatternMiner oluştur
+    # Create TextPatternMiner
     miner = TextPatternMiner(
         data=df,
         text_column=text_column,
         category_column=type_column,
-        remove_stopwords=False,  # Türkçe için False önerilir
+        remove_stopwords=False,  # Recommended False for Turkish
         lowercase=True,
         language='turkish'
     )
     
-    # N-gram analizi yap
-    # Bigram (2), Trigram (3), 4-gram analizi
+    # Run n-gram analysis
+    # Bigram (2), Trigram (3), 4-gram analysis
     ngram_counts = miner.analyze_ngrams(
         n_values=[2, 3, 4],
-        min_support=0.01,  # En az %1 support
-        top_n=30  # Her type için top 30
+        min_support=0.01,  # At least 1% support
+        top_n=30  # Top 30 for each type
     )
     
-    # CSV olarak export et
+    # Export to CSV
     print("\n" + "=" * 80)
-    print("N-GRAM'LARI EXPORT EDİYOR...")
+    print("EXPORTING N-GRAMS...")
     print("=" * 80)
     exported_files = miner.export_ngrams(
         n_values=[2, 3, 4],
@@ -128,18 +128,18 @@ def main():
     )
     
     print("\n" + "=" * 80)
-    print("ANALİZ TAMAMLANDI!")
+    print("ANALYSIS COMPLETED!")
     print("=" * 80)
-    print(f"Export edilen dosyalar:")
+    print("Exported files:")
     for file in exported_files:
         print(f"  - {file}")
-    
-    # İstatistikler
+
+    # Statistics
     stats = miner.ngram_analyzer.get_ngram_statistics()
-    print(f"\nİstatistikler:")
-    print(f"  Type sayısı: {len(stats['types'])}")
+    print(f"\nStatistics:")
+    print(f"  Number of types: {len(stats['types'])}")
     for type_name in stats['types']:
-        print(f"  {type_name}: {stats['type_doc_counts'][type_name]} doküman")
+        print(f"  {type_name}: {stats['type_doc_counts'][type_name]} documents")
 
 
 if __name__ == '__main__':

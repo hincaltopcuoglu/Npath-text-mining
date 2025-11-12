@@ -33,26 +33,26 @@ class CategoryGraphBuilder:
         edge_weights = Counter()
         node_counts = Counter()
         
-        # Her sequence için edge'leri say
+        # Count edges for each sequence
         for sequence in sequences:
             if len(sequence) < 2:
                 continue
             
-            # Node'ları say
+            # Count nodes
             for node in sequence:
                 node_counts[node] += 1
             
-            # Edge'leri oluştur (sıralı geçişler)
+            # Create edges (sequential transitions)
             for i in range(len(sequence) - 1):
                 source = sequence[i]
                 target = sequence[i + 1]
                 edge_weights[(source, target)] += 1
         
-        # Graph'a node'ları ekle
+        # Add nodes to graph
         for node, count in node_counts.items():
             G.add_node(node, count=count, frequency=count / len(sequences))
         
-        # Graph'a edge'leri ekle
+        # Add edges to graph
         total_edges = sum(edge_weights.values())
         for (source, target), count in edge_weights.items():
             if weight_type == 'frequency':
@@ -93,11 +93,11 @@ class CategoryGraphBuilder:
             category_df = df[df[category_column] == category]
             sequences = category_df[sequence_column].tolist()
             
-            # Graph oluştur
+            # Create graph
             graph = self.build_graph(sequences, category)
             self.graphs[category] = graph
             
-            # İstatistikleri kaydet
+            # Save statistics
             self.category_stats[category] = {
                 'num_documents': len(category_df),
                 'num_nodes': graph.number_of_nodes(),
@@ -172,7 +172,7 @@ class CategoryGraphBuilder:
             except (nx.NodeNotFound, nx.NetworkXNoPath):
                 pass
         elif source:
-            # Belirli bir node'dan başlayan tüm path'ler
+            # All paths starting from a specific node
             for target_node in filtered_graph.nodes():
                 if target_node != source:
                     try:
@@ -183,7 +183,7 @@ class CategoryGraphBuilder:
                     except (nx.NodeNotFound, nx.NetworkXNoPath):
                         pass
         else:
-            # Tüm önemli path'leri bul (top edges'den)
+            # Find all important paths (from top edges)
             top_edges = self.get_top_edges(category, top_n=50)
             for (u, v), weight in top_edges:
                 if weight >= min_weight:

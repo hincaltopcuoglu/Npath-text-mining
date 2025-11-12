@@ -35,21 +35,21 @@ class PatternVisualizer:
             top_n_edges: Görüntülenecek en önemli N edge
             layout: Graph layout ('spring', 'circular', 'kamada_kawai')
         """
-        # En önemli node'ları seç (degree'e göre)
+        # Select most important nodes (by degree)
         degrees = dict(graph.degree(weight='weight'))
         top_nodes = sorted(degrees.items(), key=lambda x: x[1], reverse=True)[:top_n_nodes]
         top_node_set = set([node for node, _ in top_nodes])
         
-        # Subgraph oluştur
+        # Create subgraph
         subgraph = graph.subgraph(top_node_set).copy()
         
-        # En önemli edge'leri seç
+        # Select most important edges
         edges_with_weights = [(u, v, data['weight']) 
                              for u, v, data in subgraph.edges(data=True)]
         edges_with_weights.sort(key=lambda x: x[2], reverse=True)
         top_edges = [(u, v) for u, v, w in edges_with_weights[:top_n_edges]]
         
-        # Sadece top edge'leri içeren graph
+        # Graph containing only top edges
         final_graph = nx.DiGraph()
         final_graph.add_nodes_from(subgraph.nodes(data=True))
         for u, v in top_edges:
@@ -66,17 +66,17 @@ class PatternVisualizer:
         else:
             pos = nx.spring_layout(final_graph)
         
-        # Çizim
+        # Drawing
         plt.figure(figsize=self.figsize)
         
-        # Node'ları çiz
+        # Draw nodes
         node_sizes = [degrees.get(node, 0) * node_size_factor for node in final_graph.nodes()]
         nx.draw_networkx_nodes(final_graph, pos, 
                               node_size=node_sizes,
                               node_color='lightblue',
                               alpha=0.7)
         
-        # Edge'leri çiz
+        # Draw edges
         edge_widths = [final_graph[u][v].get('weight', 0) * edge_width_factor 
                        for u, v in final_graph.edges()]
         nx.draw_networkx_edges(final_graph, pos,
@@ -87,7 +87,7 @@ class PatternVisualizer:
                               arrowsize=20,
                               arrowstyle='->')
         
-        # Label'ları çiz (sadece önemli node'lar için)
+        # Draw labels (only for important nodes)
         labels = {node: node if degrees.get(node, 0) > np.percentile(list(degrees.values()), 75) 
                  else '' for node in final_graph.nodes()}
         nx.draw_networkx_labels(final_graph, pos, labels, font_size=8)
@@ -118,7 +118,7 @@ class PatternVisualizer:
             if not top_patterns:
                 continue
             
-            # Pattern'leri string'e çevir
+            # Convert patterns to strings
             pattern_strings = [' -> '.join(p) for p, _ in top_patterns]
             scores = [s for _, s in top_patterns]
             
@@ -199,7 +199,7 @@ class PatternVisualizer:
         """
         Pattern'lerin kategoriler arası dağılımını heatmap olarak göster
         """
-        # Tüm pattern'leri topla
+        # Collect all patterns
         all_patterns = set()
         pattern_scores = defaultdict(dict)
         
@@ -209,7 +209,7 @@ class PatternVisualizer:
                 all_patterns.add(pattern_key)
                 pattern_scores[pattern_key][category] = score
         
-        # Matrix oluştur
+        # Create matrix
         categories = list(patterns_by_category.keys())
         pattern_list = sorted(list(all_patterns))[:top_n_patterns]
         

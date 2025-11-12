@@ -11,9 +11,9 @@ from ngram_analyzer import NGramAnalyzer
 
 
 class TextPatternMiner:
-    """
-    Ana pattern mining sınıfı - Teradata Aster nPath benzeri yaklaşım
-    """
+        """
+        Main pattern mining class - Teradata Aster nPath-like approach
+        """
     
     def __init__(self,
                  data: pd.DataFrame = None,
@@ -25,15 +25,15 @@ class TextPatternMiner:
                  language: str = 'turkish'):
         """
         Args:
-            data: DataFrame (veya data_path kullan)
-            data_path: CSV dosya yolu
-            text_column: Text column adı
-            category_column: Kategori column adı
-            remove_stopwords: Stopword'leri kaldır
-            lowercase: Küçük harfe çevir
-            language: Dil ('turkish' veya 'english')
+            data: DataFrame (or use data_path)
+            data_path: CSV file path
+            text_column: Text column name
+            category_column: Category column name
+            remove_stopwords: Remove stopwords
+            lowercase: Convert to lowercase
+            language: Language ('turkish' or 'english')
         """
-        # Veri yükleme
+        # Data loading
         if data is not None:
             self.df = data.copy()
         elif data_path:
@@ -72,7 +72,7 @@ class TextPatternMiner:
         self.processed_df = None
     
     def preprocess(self):
-        """Veriyi işle ve sequence'leri çıkar"""
+        """Process data and extract sequences"""
         print("Preprocessing text data...")
         self.processed_df = self.preprocessor.process_dataframe(
             self.df, self.text_column, self.category_column
@@ -81,7 +81,7 @@ class TextPatternMiner:
         return self.processed_df
     
     def build_graphs(self, sequence_column: str = 'tokens'):
-        """Her kategori için graph'ları oluştur"""
+        """Build graphs for each category"""
         if self.processed_df is None:
             self.preprocess()
         
@@ -97,7 +97,7 @@ class TextPatternMiner:
         for category, stats in self.graph_builder.category_stats.items():
             print(f"  {category}: {stats['num_nodes']} nodes, {stats['num_edges']} edges")
         
-        # Pattern finder'ı initialize et
+        # Initialize pattern finder
         self.pattern_finder = PatternFinder(self.graph_builder)
         
         return graphs
@@ -250,7 +250,7 @@ class TextPatternMiner:
         return self.visualizer.visualize_pattern_heatmap(patterns, top_n_patterns)
     
     def get_summary(self) -> Dict:
-        """Özet istatistikler"""
+        """Summary statistics"""
         if self.processed_df is None:
             self.preprocess()
         
@@ -268,7 +268,7 @@ class TextPatternMiner:
     def export_patterns(self,
                        patterns: Dict[str, List[Tuple[List[str], float]]],
                        output_path: str = 'patterns.csv'):
-        """Pattern'leri CSV olarak export et"""
+        """Export patterns to CSV"""
         rows = []
         for category, pattern_list in patterns.items():
             for pattern, score in pattern_list:
@@ -289,21 +289,21 @@ class TextPatternMiner:
                       min_support: float = 0.0,
                       top_n: int = 50):
         """
-        N-gram analizi yap - İlk aşama
+        Perform n-gram analysis - Phase 1
         
         Args:
-            n_values: Hangi n değerleri için analiz [2, 3, 4] = bigram, trigram, 4-gram
+            n_values: Which n values to analyze [2, 3, 4] = bigram, trigram, 4-gram
             min_support: Minimum support threshold
-            top_n: Her type için en iyi N n-gram
+            top_n: Top N n-grams for each type
         
         Returns:
             N-gram counts dictionary
         """
         print("=" * 80)
-        print("N-GRAM ANALİZİ - İLK AŞAMA")
+        print("N-GRAM ANALYSIS - PHASE 1")
         print("=" * 80)
         
-        # N-gram'ları say
+        # Count n-grams
         ngram_counts = self.ngram_analyzer.count_ngrams_by_type(
             self.df,
             self.text_column,
@@ -311,7 +311,7 @@ class TextPatternMiner:
             n_values=n_values
         )
         
-        # Her n değeri için sonuçları yazdır
+        # Print results for each n value
         for n in n_values:
             self.ngram_analyzer.print_ngram_summary(
                 n=n,
@@ -325,11 +325,11 @@ class TextPatternMiner:
                      n_values: List[int] = [2, 3, 4],
                      min_support: float = 0.0,
                      top_n: int = 100):
-        """N-gram'ları CSV olarak export et"""
-        # Önce analiz yap
+        """Export n-grams to CSV"""
+        # Run analysis first
         self.analyze_ngrams(n_values, min_support, top_n)
         
-        # Her n değeri için export
+        # Export for each n value
         exported_files = []
         for n in n_values:
             output_path = f'ngrams_{n}gram.csv'
@@ -349,23 +349,23 @@ class TextPatternMiner:
                                      discriminative_threshold: float = 1.5,
                                      top_n: int = 50):
         """
-        İkinci aşama: Discriminative n-gram analizi
+        Phase 2: Discriminative n-gram analysis
 
         Args:
-            n: n-gram boyutu (2, 3, 4)
+            n: n-gram size (2, 3, 4)
             min_support: Minimum support threshold
             discriminative_threshold: Discriminative score threshold
-            top_n: Her type için en iyi N discriminative n-gram
+            top_n: Top N discriminative n-grams for each type
 
         Returns:
             Discriminative n-gram dictionary
         """
         if not hasattr(self, 'ngram_analyzer') or not self.ngram_analyzer.ngram_counts:
-            print("Önce n-gram analizi yapın: miner.analyze_ngrams()")
+            print("Run n-gram analysis first: miner.analyze_ngrams()")
             return {}
 
         print("=" * 80)
-        print("İKİNCİ AŞAMA - DISCRIMINATIVE N-GRAM ANALİZİ")
+        print("PHASE 2 - DISCRIMINATIVE N-GRAM ANALYSIS")
         print("=" * 80)
 
         self.ngram_analyzer.print_discriminative_analysis(
@@ -390,7 +390,7 @@ class TextPatternMiner:
                                     min_support: float = 0.01,
                                     discriminative_threshold: float = 1.5,
                                     top_n: int = 100):
-        """Discriminative n-gram'ları export et"""
+        """Export discriminative n-grams"""
         if output_path is None:
             output_path = f'discriminative_{n}grams.csv'
 
