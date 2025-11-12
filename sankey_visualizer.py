@@ -95,11 +95,23 @@ class SankeyVisualizer:
                 # Convert matplotlib color name to hex
                 try:
                     rgb = mcolors.to_rgb(color)
-                    hex_colors.append(mcolors.rgb2hex(rgb))
-                except:
+                    clean_hex = mcolors.rgb2hex(rgb)
+                    # Ensure the hex is clean (6 characters only)
+                    clean_hex = clean_hex.lstrip('#')
+                    if len(clean_hex) == 8:
+                        clean_hex = clean_hex[:6]
+                    hex_colors.append(f'#{clean_hex}')
+                except Exception:
                     hex_colors.append('#888888')  # Default gray
         
-        self.class_colors = {cls: hex_colors[i % len(hex_colors)] for i, cls in enumerate(all_classes)}
+        # Store class colors - ensure all are 6-character hex (no alpha)
+        self.class_colors = {}
+        for i, cls in enumerate(all_classes):
+            color = hex_colors[i % len(hex_colors)]
+            # Final cleanup: ensure no alpha channel
+            if color.startswith('#') and len(color) == 9:
+                color = color[:7]  # Keep only #RRGGBB
+            self.class_colors[cls] = color
 
         # Track which classes have patterns
         classes_with_patterns = set()
