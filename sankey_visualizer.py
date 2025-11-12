@@ -283,6 +283,15 @@ class SankeyVisualizer:
             value.append(flow['value'])
             link_colors.append(flow['color'])
 
+        # Convert hex colors to rgba format for transparency
+        def hex_to_rgba(hex_color, alpha=0.5):
+            """Convert hex color to rgba format"""
+            hex_color = hex_color.lstrip('#')
+            r = int(hex_color[0:2], 16)
+            g = int(hex_color[2:4], 16)
+            b = int(hex_color[4:6], 16)
+            return f"rgba({r}, {g}, {b}, {alpha})"
+
         # Create Sankey diagram
         fig = go.Figure(data=[go.Sankey(
             node=dict(
@@ -296,7 +305,7 @@ class SankeyVisualizer:
                 source=source,
                 target=target,
                 value=value,
-                color=[f"{color}80" for color in link_colors]  # Add transparency
+                color=[hex_to_rgba(color, alpha=0.5) for color in link_colors]  # Add transparency
             )
         )])
 
@@ -352,6 +361,18 @@ class SankeyVisualizer:
                 value.append(flow['value'])
                 link_colors.append(flow['color'])
 
+        # Convert hex color to rgba for transparency
+        def hex_to_rgba(hex_color, alpha=0.5):
+            """Convert hex color to rgba format"""
+            hex_color = hex_color.lstrip('#')
+            r = int(hex_color[0:2], 16)
+            g = int(hex_color[2:4], 16)
+            b = int(hex_color[4:6], 16)
+            return f"rgba({r}, {g}, {b}, {alpha})"
+
+        class_color = self.class_colors.get(class_name, '#888888')
+        link_color_rgba = hex_to_rgba(class_color, alpha=0.5)
+
         fig = go.Figure(data=[go.Sankey(
             node=dict(
                 pad=15,
@@ -364,7 +385,7 @@ class SankeyVisualizer:
                 source=source,
                 target=target,
                 value=value,
-                color=[f"{self.class_colors.get(class_name, '#888888')}80" for _ in link_colors]
+                color=[link_color_rgba for _ in link_colors]
             )
         )])
 
