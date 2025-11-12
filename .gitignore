@@ -149,7 +149,9 @@ cython_debug/
 .cursor/
 
 # Data files (large CSV files)
+# Keep opinions.csv in raw data, ignore others
 data/raw/*.csv
+!data/raw/opinions.csv
 data/processed/*.csv
 
 # Analysis results
