@@ -508,16 +508,24 @@ class SankeyVisualizer:
                 return f"rgba(136, 136, 136, {alpha})"
 
         # Validate and convert link colors
+        print(f"\n🔍 DEBUG: Processing {len(link_colors)} link colors...")
+        print(f"   Sample input colors: {link_colors[:5]}")
+        
         validated_link_colors = []
-        for color in link_colors:
+        for i, color in enumerate(link_colors):
             if not color or not isinstance(color, str):
                 validated_link_colors.append("rgba(136, 136, 136, 0.5)")
             else:
                 try:
-                    validated_link_colors.append(hex_to_rgba(color, alpha=0.5))
+                    rgba_color = hex_to_rgba(color, alpha=0.5)
+                    validated_link_colors.append(rgba_color)
+                    if i < 3:
+                        print(f"   Color {i}: '{color}' -> '{rgba_color}'")
                 except Exception as e:
                     print(f"  ⚠️  Warning: Invalid color '{color}', using default: {e}")
                     validated_link_colors.append("rgba(136, 136, 136, 0.5)")
+        
+        print(f"   Sample output colors: {validated_link_colors[:5]}")
         
         # Ensure we have valid data
         if len(source) == 0 or len(target) == 0:
