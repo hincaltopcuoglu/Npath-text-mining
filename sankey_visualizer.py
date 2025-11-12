@@ -484,19 +484,20 @@ class SankeyVisualizer:
                 # Extract alpha from hex (0-255) and convert to 0-1 range
                 alpha_hex = int(hex_color[6:8], 16)
                 alpha = alpha_hex / 255.0
+                return f"rgba({r}, {g}, {b}, {alpha})"
             elif len(hex_color) == 6:
                 r = int(hex_color[0:2], 16)
                 g = int(hex_color[2:4], 16)
                 b = int(hex_color[4:6], 16)
+                return f"rgba({r}, {g}, {b}, {alpha})"
             elif len(hex_color) == 3:
                 r = int(hex_color[0] * 2, 16)
                 g = int(hex_color[1] * 2, 16)
                 b = int(hex_color[2] * 2, 16)
+                return f"rgba({r}, {g}, {b}, {alpha})"
             else:
                 # Invalid format, use default
                 return f"rgba(136, 136, 136, {alpha})"
-            
-            return f"rgba({r}, {g}, {b}, {alpha})"
 
         # Validate and convert link colors
         validated_link_colors = []
