@@ -1,0 +1,609 @@
+#!/usr/bin/env python3
+"""
+Rebuild the Colab notebook with all updates and proper organization
+"""
+import json
+
+# Create the updated notebook structure
+notebook = {
+    "cells": [],
+    "metadata": {
+        "colab": {
+            "provenance": [],
+            "collapsed_sections": []
+        },
+        "kernelspec": {
+            "display_name": "Python 3",
+            "name": "python3"
+        },
+        "language_info": {
+            "name": "python"
+        }
+    },
+    "nbformat": 4,
+    "nbformat_minor": 0
+}
+
+# Cell 0: Open in Colab badge
+notebook["cells"].append({
+    "cell_type": "markdown",
+    "metadata": {"colab_type": "text", "id": "view-in-github"},
+    "source": [
+        '<a href="https://colab.research.google.com/github/hincaltopcuoglu/Npath-text-mining/blob/master/npath_text_analysis.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>'
+    ]
+})
+
+# Cell 1: Title and Introduction
+notebook["cells"].append({
+    "cell_type": "markdown",
+    "metadata": {"id": "title"},
+    "source": [
+        "# NPath Text Mining: N-Gram Analysis for Classification\n",
+        "\n",
+        "This notebook performs n-gram analysis and discriminative feature extraction for text classification using the opinions dataset.\n",
+        "\n",
+        "**Target**: `type` column (Claim, Evidence, Counterclaim, etc.)  \n",
+        "**Features**: `text` column (student opinions/arguments)\n",
+        "\n",
+        "## Analysis Pipeline:\n",
+        "1. Load and clean opinions dataset\n",
+        "2. Generate n-grams (1-grams through 5-grams)\n",
+        "3. Calculate discriminative scores for classification\n",
+        "4. Pattern ranking and analysis\n",
+        "5. Sequential pattern visualization (Sankey diagrams)\n",
+        "6. Export results for model training\n",
+        "\n",
+        "---\n",
+        "**Dataset**: ~34K student opinion texts  \n",
+        "**GitHub**: https://github.com/hincaltopcuoglu/Npath-text-mining"
+    ]
+})
+
+# Cell 2: Force Sync
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "force_sync"},
+    "source": [
+        "# @title 🔄 FORCE SYNC: Get Latest Code\n",
+        "# Download latest code from GitHub\n",
+        "\n",
+        "import os\n",
+        "from pathlib import Path\n",
+        "import urllib.request\n",
+        "import urllib.error\n",
+        "\n",
+        "print(\"🔄 Force Sync: Getting latest code from GitHub...\")\n",
+        "\n",
+        "# Try direct file downloads first (more reliable)\n",
+        "print(\"📥 Trying direct file downloads...\")\n",
+        "\n",
+        "# Files to download\n",
+        "files_to_download = [\n",
+        "    (\"colab_ngram_analysis.py\", \"https://raw.githubusercontent.com/hincaltopcuoglu/Npath-text-mining/master/colab_ngram_analysis.py\"),\n",
+        "    (\"pattern_ranking.py\", \"https://raw.githubusercontent.com/hincaltopcuoglu/Npath-text-mining/master/pattern_ranking.py\"),\n",
+        "    (\"sankey_visualizer.py\", \"https://raw.githubusercontent.com/hincaltopcuoglu/Npath-text-mining/master/sankey_visualizer.py\"),\n",
+        "    (\"COLAB_SETUP.md\", \"https://raw.githubusercontent.com/hincaltopcuoglu/Npath-text-mining/master/COLAB_SETUP.md\"),\n",
+        "]\n",
+        "\n",
+        "direct_download_success = 0\n",
+        "direct_download_failed = 0\n",
+        "\n",
+        "for filename, url in files_to_download:\n",
+        "    try:\n",
+        "        # Always download to get latest version (force update)\n",
+        "        urllib.request.urlretrieve(url, filename)\n",
+        "        print(f\"  ✅ Downloaded/Updated {filename}\")\n",
+        "        direct_download_success += 1\n",
+        "    except Exception as e:\n",
+        "        print(f\"  ❌ Failed {filename}: {str(e)[:50]}...\")\n",
+        "        direct_download_failed += 1\n",
+        "\n",
+        "# Verify files\n",
+        "required_files = [\"colab_ngram_analysis.py\", \"pattern_ranking.py\", \"sankey_visualizer.py\"]\n",
+        "print(\"\\n🔍 File verification:\")\n",
+        "missing_files = []\n",
+        "for file_path in required_files:\n",
+        "    if Path(file_path).exists():\n",
+        "        print(f\"  ✅ {file_path}\")\n",
+        "    else:\n",
+        "        print(f\"  ❌ Missing: {file_path}\")\n",
+        "        missing_files.append(file_path)\n",
+        "\n",
+        "if missing_files:\n",
+        "    print(\"\\n⚠️  Some files missing. Use the MANUAL DOWNLOAD cell below.\")\n",
+        "else:\n",
+        "    print(\"\\n🎯 All required files present - ready to run analysis!\")\n",
+        "\n",
+        "print(f\"\\n📊 Summary: {direct_download_success} files downloaded, {direct_download_failed} failed\")"
+    ]
+})
+
+# Cell 3: Quick Sync
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "quick_sync"},
+    "source": [
+        "# @title 🔄 Quick Sync: Check for Updates\n",
+        "# Check if notebook or code files have been updated on GitHub\n",
+        "import os\n",
+        "from pathlib import Path\n",
+        "import urllib.request\n",
+        "import json\n",
+        "\n",
+        "# GitHub repository details\n",
+        "GITHUB_USERNAME = \"hincaltopcuoglu\"  # @param {type:\"string\"}\n",
+        "REPO_NAME = \"Npath-text-mining\"     # @param {type:\"string\"}\n",
+        "BRANCH = \"master\"                   # @param {type:\"string\"}\n",
+        "\n",
+        "print(\"🔍 Checking for updates...\")\n",
+        "\n",
+        "# Check if notebook file was updated\n",
+        "notebook_url = f\"https://raw.githubusercontent.com/{GITHUB_USERNAME}/{REPO_NAME}/{BRANCH}/npath_text_analysis.ipynb\"\n",
+        "try:\n",
+        "    response = urllib.request.urlopen(notebook_url)\n",
+        "    remote_notebook = json.loads(response.read())\n",
+        "    remote_cell_count = len(remote_notebook['cells'])\n",
+        "\n",
+        "    print(f\"📊 Remote notebook has {remote_cell_count} cells\")\n",
+        "\n",
+        "    # Check key files\n",
+        "    key_files = [\n",
+        "        \"sankey_visualizer.py\",\n",
+        "        \"colab_ngram_analysis.py\",\n",
+        "        \"pattern_ranking.py\"\n",
+        "    ]\n",
+        "\n",
+        "    print(\"\\n📁 Checking key files:\")\n",
+        "    for filename in key_files:\n",
+        "        file_url = f\"https://raw.githubusercontent.com/{GITHUB_USERNAME}/{REPO_NAME}/{BRANCH}/{filename}\"\n",
+        "        try:\n",
+        "            response = urllib.request.urlopen(file_url)\n",
+        "            remote_size = len(response.read())\n",
+        "            local_size = Path(filename).stat().st_size if Path(filename).exists() else 0\n",
+        "\n",
+        "            if local_size == 0:\n",
+        "                print(f\"  ⚠️  {filename}: NOT FOUND locally - Run FORCE SYNC!\")\n",
+        "            elif abs(remote_size - local_size) > 100:  # Allow small differences\n",
+        "                print(f\"  🔄 {filename}: Size differs - Run FORCE SYNC to update\")\n",
+        "            else:\n",
+        "                print(f\"  ✅ {filename}: Up to date\")\n",
+        "        except:\n",
+        "            print(f\"  ❓ {filename}: Could not check\")\n",
+        "\n",
+        "    print(\"\\n💡 IMPORTANT:\")\n",
+        "    print(\"   • If NEW CELLS were added → REFRESH the page (F5) to see them\")\n",
+        "    print(\"   • If only CODE changed → Run FORCE SYNC cell (no refresh needed)\")\n",
+        "    print(\"   • Always run FORCE SYNC after refreshing to get latest files\")\n",
+        "\n",
+        "except Exception as e:\n",
+        "    print(f\"⚠️  Could not check for updates: {e}\")\n",
+        "    print(\"💡 Run FORCE SYNC cell to get latest code\")"
+    ]
+})
+
+# Cell 4: Install Dependencies
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "install_deps"},
+    "source": [
+        "# @title 📦 Install Dependencies\n",
+        "# Install required packages for Colab\n",
+        "print(\"📦 Installing dependencies...\")\n",
+        "\n",
+        "# Core ML/data science packages\n",
+        "!pip install -q pandas numpy scikit-learn matplotlib seaborn plotly kaleido\n",
+        "\n",
+        "# NLP packages\n",
+        "!pip install -q nltk tqdm\n",
+        "\n",
+        "# Download NLTK data\n",
+        "import nltk\n",
+        "nltk.download('punkt', quiet=True)\n",
+        "nltk.download('punkt_tab', quiet=True)\n",
+        "nltk.download('stopwords', quiet=True)\n",
+        "nltk.download('wordnet', quiet=True)\n",
+        "nltk.download('averaged_perceptron_tagger', quiet=True)\n",
+        "nltk.download('omw-1.4', quiet=True)\n",
+        "\n",
+        "print(\"✅ Dependencies installed!\")\n",
+        "\n",
+        "# Test imports\n",
+        "try:\n",
+        "    import pandas as pd\n",
+        "    import numpy as np\n",
+        "    from sklearn.feature_extraction.text import CountVectorizer\n",
+        "    from nltk.util import ngrams\n",
+        "    import plotly.graph_objects as go\n",
+        "    print(\"✅ All imports successful!\")\n",
+        "except ImportError as e:\n",
+        "    print(f\"❌ Import error: {e}\")"
+    ]
+})
+
+# Cell 5: Setup Persistence
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "setup_persistence"},
+    "source": [
+        "# @title 💾 Setup Persistence: Save to Google Drive\n",
+        "# Mount Google Drive for persistent storage across sessions\n",
+        "\n",
+        "from google.colab import drive\n",
+        "import os\n",
+        "from pathlib import Path\n",
+        "\n",
+        "print(\"💾 Setting up Google Drive persistence...\")\n",
+        "\n",
+        "# Mount Google Drive\n",
+        "drive.mount('/content/drive', force_remount=False)\n",
+        "\n",
+        "# Create persistent directories\n",
+        "persistent_dir = Path('/content/drive/MyDrive/NPath_Analysis')\n",
+        "results_backup_dir = persistent_dir / 'results_backup'\n",
+        "\n",
+        "persistent_dir.mkdir(exist_ok=True)\n",
+        "results_backup_dir.mkdir(exist_ok=True)\n",
+        "\n",
+        "print(f\"✅ Google Drive mounted successfully!\")\n",
+        "print(f\"📁 Persistent storage: {persistent_dir}\")\n",
+        "print(f\"💾 Results backup: {results_backup_dir}\")\n",
+        "print(f\"\\n🎯 Your analysis results will be saved to Google Drive!\")\n",
+        "print(f\"💡 You can resume work from any Colab session.\")"
+    ]
+})
+
+# Cell 6: Quick Data Check
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "data_check"},
+    "source": [
+        "# @title 📊 Quick Data Check\n",
+        "# Load and examine the opinions dataset\n",
+        "import pandas as pd\n",
+        "from collections import Counter\n",
+        "\n",
+        "print(\"🔍 Loading opinions dataset...\")\n",
+        "\n",
+        "# Load data\n",
+        "try:\n",
+        "    df = pd.read_csv('data/raw/opinions.csv',\n",
+        "                     sep=',',\n",
+        "                     quotechar='\"',\n",
+        "                     escapechar='\\\\',\n",
+        "                     on_bad_lines='skip',\n",
+        "                     engine='python')\n",
+        "\n",
+        "    # Clean column names\n",
+        "    df.columns = df.columns.str.replace(';;;;;;', '')\n",
+        "\n",
+        "    # Clean data\n",
+        "    initial_rows = len(df)\n",
+        "    df = df.dropna(subset=['text', 'type'])\n",
+        "    df = df[df['text'].str.len() > 10]\n",
+        "    df = df[df['type'].str.len() > 0]\n",
+        "\n",
+        "    print(f\"✅ Loaded {len(df)} rows from {initial_rows} total\")\n",
+        "    print(f\"📊 Columns: {list(df.columns)}\")\n",
+        "    print(f\"🎯 Target classes: {df['type'].nunique()}\")\n",
+        "\n",
+        "    # Show class distribution\n",
+        "    print(\"\\n📈 Class Distribution (Top 10):\")\n",
+        "    class_counts = df['type'].value_counts()\n",
+        "    for cls, count in class_counts.head(10).items():\n",
+        "        print(f\"  {cls[:40]:<40}: {count}\")\n",
+        "\n",
+        "    # Show sample texts\n",
+        "    print(\"\\n📝 Sample Texts:\")\n",
+        "    for i, row in df.head(3).iterrows():\n",
+        "        print(f\"  {row['type'][:15]:<15}: {row['text'][:80]}...\")\n",
+        "\n",
+        "except Exception as e:\n",
+        "    print(f\"❌ Error loading data: {e}\")\n",
+        "    print(\"💡 Make sure data/raw/opinions.csv exists. Run FORCE SYNC if needed.\")"
+    ]
+})
+
+# Cell 7: Run N-Gram Analysis (UPDATED to include 1-5 grams)
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "run_analysis"},
+    "source": [
+        "# @title 🚀 Run N-Gram Analysis\n",
+        "# Execute the complete n-gram analysis pipeline\n",
+        "\n",
+        "# Import the analyzer\n",
+        "from colab_ngram_analysis import ColabNgramAnalyzer\n",
+        "\n",
+        "# Configuration parameters\n",
+        "N_VALUES = [1, 2, 3, 4, 5]  # @param {type:\"raw\"} # Include 1-grams and 5-grams for Sankey visualization\n",
+        "MIN_FREQ = 5                # @param {type:\"integer\"} # Minimum frequency for n-grams\n",
+        "MIN_SUPPORT = 10            # @param {type:\"integer\"} # Minimum support for discriminative analysis\n",
+        "TOP_K = 500                 # @param {type:\"integer\"} # Top k discriminative n-grams per class\n",
+        "BATCH_SIZE = 1000           # @param {type:\"integer\"} # Processing batch size\n",
+        "\n",
+        "print(\"🚀 Starting N-Gram Analysis Pipeline\")\n",
+        "print(\"=\" * 50)\n",
+        "print(f\"N-grams: {N_VALUES}\")\n",
+        "print(f\"Min frequency: {MIN_FREQ}\")\n",
+        "print(f\"Min support: {MIN_SUPPORT}\")\n",
+        "print(f\"Top k per class: {TOP_K}\")\n",
+        "print(f\"Batch size: {BATCH_SIZE}\")\n",
+        "print(\"=\" * 50)\n",
+        "\n",
+        "# Initialize analyzer\n",
+        "analyzer = ColabNgramAnalyzer(\n",
+        "    data_path='data/raw/opinions.csv',\n",
+        "    text_col='text',\n",
+        "    target_col='type'\n",
+        ")\n",
+        "\n",
+        "# Run complete analysis\n",
+        "analyzer.run_complete_analysis(\n",
+        "    n_values=N_VALUES,\n",
+        "    min_freq=MIN_FREQ,\n",
+        "    min_support=MIN_SUPPORT,\n",
+        "    top_k=TOP_K,\n",
+        "    batch_size=BATCH_SIZE\n",
+        ")\n",
+        "\n",
+        "print(\"\\n✅ Analysis Complete!\")"
+    ]
+})
+
+# Cell 8: Check Results
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "check_results"},
+    "source": [
+        "# @title 📁 Check Results\n",
+        "# Examine the generated results and files\n",
+        "import os\n",
+        "from pathlib import Path\n",
+        "import pandas as pd\n",
+        "\n",
+        "results_dir = Path('colab_results')\n",
+        "if results_dir.exists():\n",
+        "    print(f\"📂 Results directory: {results_dir.absolute()}\")\n",
+        "\n",
+        "    # List all files\n",
+        "    files = list(results_dir.glob('*'))\n",
+        "    print(f\"📄 Generated files: {len(files)}\")\n",
+        "\n",
+        "    for file_path in sorted(files):\n",
+        "        size_mb = file_path.stat().st_size / (1024 * 1024)\n",
+        "        print(f\"  📄 {file_path.name:<30}: {size_mb:.2f} MB\")\n",
+        "\n",
+        "    print(\"\\n🔍 Sample of discriminative 2-grams:\")\n",
+        "\n",
+        "    # Load and show sample discriminative results\n",
+        "    disc_file = results_dir / '2gram_discriminative.csv'\n",
+        "    if disc_file.exists():\n",
+        "        disc_df = pd.read_csv(disc_file)\n",
+        "        print(f\"\\nTotal discriminative 2-grams: {len(disc_df)}\")\n",
+        "\n",
+        "        # Show top discriminative for each class\n",
+        "        for class_name in disc_df['class'].unique()[:5]:  # Show first 5 classes\n",
+        "            class_data = disc_df[disc_df['class'] == class_name]\n",
+        "            top_ngrams = class_data.nlargest(3, 'discriminative_score')\n",
+        "            print(f\"\\n🎯 Top 2-grams for '{class_name}':\")\n",
+        "            for _, row in top_ngrams.iterrows():\n",
+        "                print(f\"  {row['discriminative_score']:.1f}x: '{row['ngram'][:50]}...'\")\n",
+        "\n",
+        "else:\n",
+        "    print(\"❌ Results directory not found. Run the analysis first.\")\n",
+        "\n",
+        "# Check for visualization files\n",
+        "viz_files = list(Path('.').glob('colab_results/*.png'))\n",
+        "if viz_files:\n",
+        "    print(f\"\\n🖼️  Visualization files: {len(viz_files)}\")\n",
+        "    for viz_file in viz_files:\n",
+        "        print(f\"  🖼️  {viz_file.name}\")"
+    ]
+})
+
+# Cell 9: Pattern Ranking
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "pattern_ranking"},
+    "source": [
+        "# @title 🎯 Advanced Pattern Ranking & Analysis\n",
+        "# Rank patterns by confidence, lift, and rarity\n",
+        "\n",
+        "from pattern_ranking import PatternRanker\n",
+        "\n",
+        "print(\"🎯 Starting Advanced Pattern Ranking Analysis\")\n",
+        "print(\"=\" * 60)\n",
+        "\n",
+        "# Initialize ranker\n",
+        "ranker = PatternRanker(results_dir='colab_results')\n",
+        "\n",
+        "# Load n-gram data\n",
+        "ranker.load_ngram_data(n_values=[2, 3, 4])\n",
+        "\n",
+        "# Run ranking analysis\n",
+        "ranker.rank_patterns(\n",
+        "    n_values=[2, 3, 4],\n",
+        "    min_support=10,\n",
+        "    top_k=100\n",
+        ")\n",
+        "\n",
+        "# Export rankings\n",
+        "ranker.export_rankings()\n",
+        "\n",
+        "# Create visualizations\n",
+        "ranker.visualize_rankings()\n",
+        "\n",
+        "print(\"\\n✅ Pattern Ranking Complete!\")"
+    ]
+})
+
+# Cell 10: Sankey Diagram (SINGLE CLEAN VERSION)
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "sankey_diagram"},
+    "source": [
+        "# @title 🌊 Sankey Diagram: Sequential N-gram Flow Visualization\n",
+        "# Create interactive Sankey diagram showing n-gram evolution (1-gram → 5-gram)\n",
+        "# Similar to Teradata Aster nPath visualization\n",
+        "\n",
+        "from sankey_visualizer import SankeyVisualizer\n",
+        "\n",
+        "print(\"🌊 Creating Sankey Diagram - Sequential Pattern Flow\")\n",
+        "print(\"=\" * 80)\n",
+        "\n",
+        "# Initialize visualizer\n",
+        "sankey = SankeyVisualizer(results_dir='colab_results')\n",
+        "\n",
+        "# Load n-gram data (including 1-grams and 5-grams if available)\n",
+        "sankey.load_ngram_data(n_values=[1, 2, 3, 4, 5])\n",
+        "\n",
+        "# Create main Sankey diagram showing all classes\n",
+        "print(\"\\n📊 Generating main Sankey diagram...\")\n",
+        "fig = sankey.create_sankey_diagram(\n",
+        "    top_k_per_class=15,  # Top 15 patterns per class per n-gram level\n",
+        "    output_file='sankey_npath_sequential_flow.html'\n",
+        ")\n",
+        "\n",
+        "if fig:\n",
+        "    print(\"\\n✅ Sankey diagram created successfully!\")\n",
+        "    print(\"📂 File: colab_results/sankey_npath_sequential_flow.html\")\n",
+        "    print(\"💡 Open the HTML file in your browser to view the interactive diagram\")\n",
+        "    print(\"   The diagram shows how n-grams evolve from 1-gram → 2-gram → 3-gram → 4-gram → 5-gram\")\n",
+        "    print(\"   Flow width represents pattern importance for each class\")\n",
+        "\n",
+        "    # Also create class-specific diagrams\n",
+        "    print(\"\\n🎯 Creating class-specific Sankey diagrams...\")\n",
+        "    if hasattr(sankey, 'class_colors') and sankey.class_colors:\n",
+        "        for class_name in list(sankey.class_colors.keys())[:5]:  # Top 5 classes\n",
+        "            sankey.create_class_specific_sankey(\n",
+        "                class_name=class_name,\n",
+        "                top_k=20,\n",
+        "                output_file=f'sankey_npath_{class_name[:20].replace(\" \", \"_\")}.html'\n",
+        "            )\n",
+        "\n",
+        "    print(\"\\n✅ All Sankey diagrams created!\")\n",
+        "else:\n",
+        "    print(\"⚠️  Could not create Sankey diagram. Make sure n-gram analysis completed successfully.\")"
+    ]
+})
+
+# Cell 11: Download Results
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "download_results"},
+    "source": [
+        "# @title 💾 Download Results\n",
+        "# Create zip file and prepare for download\n",
+        "import shutil\n",
+        "from google.colab import files\n",
+        "from pathlib import Path\n",
+        "\n",
+        "results_dir = 'colab_results'\n",
+        "zip_filename = 'npath_ngram_results.zip'\n",
+        "\n",
+        "if Path(results_dir).exists():\n",
+        "    print(f\"📦 Creating zip archive: {zip_filename}\")\n",
+        "    shutil.make_archive('npath_ngram_results', 'zip', results_dir)\n",
+        "\n",
+        "    # Get file size\n",
+        "    zip_size = Path(zip_filename).stat().st_size / (1024 * 1024)\n",
+        "    print(f\"✅ Archive created: {zip_size:.2f} MB\")\n",
+        "\n",
+        "    # Download\n",
+        "    print(\"\\n⬇️  Starting download...\")\n",
+        "    files.download(zip_filename)\n",
+        "\n",
+        "else:\n",
+        "    print(\"❌ No results to download. Run the analysis first.\")\n",
+        "\n",
+        "# Also offer individual file downloads\n",
+        "print(\"\\n📄 Individual file downloads:\")\n",
+        "if Path(results_dir).exists():\n",
+        "    csv_files = list(Path(results_dir).glob('*.csv'))\n",
+        "    html_files = list(Path(results_dir).glob('*.html'))\n",
+        "    for csv_file in csv_files:\n",
+        "        print(f\"  - {csv_file.name}\")\n",
+        "    for html_file in html_files:\n",
+        "        print(f\"  - {html_file.name}\")\n",
+        "    # Uncomment to download individual files:\n",
+        "    # files.download(str(csv_file))"
+    ]
+})
+
+# Cell 12: Auto-Save Results to Drive
+notebook["cells"].append({
+    "cell_type": "code",
+    "metadata": {"id": "auto_save"},
+    "source": [
+        "# @title 💾 Auto-Save Results to Drive\n",
+        "# Automatically save results to Google Drive for persistence\n",
+        "\n",
+        "import shutil\n",
+        "from pathlib import Path\n",
+        "\n",
+        "results_dir = Path('colab_results')\n",
+        "drive_backup_dir = Path('/content/drive/MyDrive/NPath_Analysis/results_backup')\n",
+        "\n",
+        "if results_dir.exists():\n",
+        "    print(\"💾 Saving results to Google Drive...\")\n",
+        "\n",
+        "    # Ensure backup directory exists\n",
+        "    drive_backup_dir.mkdir(parents=True, exist_ok=True)\n",
+        "\n",
+        "    # Copy all results\n",
+        "    for file_path in results_dir.glob('*'):\n",
+        "        if file_path.is_file():\n",
+        "            dest_path = drive_backup_dir / file_path.name\n",
+        "            shutil.copy2(file_path, dest_path)\n",
+        "            print(f\"  ✅ Saved: {file_path.name}\")\n",
+        "\n",
+        "    print(f\"\\n✅ All results saved to: {drive_backup_dir}\")\n",
+        "    print(\"💡 You can resume analysis from any Colab session!\")\n",
+        "else:\n",
+        "    print(\"❌ No results to save. Run the analysis first.\")"
+    ]
+})
+
+# Cell 13: Usage Instructions
+notebook["cells"].append({
+    "cell_type": "markdown",
+    "metadata": {"id": "instructions"},
+    "source": [
+        "# 📋 Usage Instructions\n",
+        "\n",
+        "## Quick Start:\n",
+        "1. **Run FORCE SYNC** to get latest code from GitHub\n",
+        "2. **Install Dependencies** (if first time)\n",
+        "3. **Setup Persistence** to mount Google Drive (optional but recommended)\n",
+        "4. **Run N-Gram Analysis** - this takes 10-30 minutes\n",
+        "5. **Check Results** to see what was generated\n",
+        "6. **Pattern Ranking** to rank patterns by importance\n",
+        "7. **Sankey Diagram** to visualize sequential patterns\n",
+        "8. **Download Results** or **Auto-Save to Drive**\n",
+        "\n",
+        "## Output Files:\n",
+        "- `Xgram_counts.csv`: Raw n-gram frequencies by class\n",
+        "- `Xgram_discriminative.csv`: Discriminative scores for classification\n",
+        "- `Xgram_rankings.csv`: Pattern rankings with confidence, lift, rarity\n",
+        "- `top_Xgram_discriminative.png`: Visualization of top discriminative n-grams\n",
+        "- `top_Xgram_patterns_comparison.png`: Pattern ranking comparisons\n",
+        "- `sankey_npath_sequential_flow.html`: Interactive Sankey diagram\n",
+        "\n",
+        "## Next Steps:\n",
+        "1. Use discriminative n-grams as features for classification models\n",
+        "2. Train ML models (SVM, Random Forest, BERT) using these features\n",
+        "3. Compare performance across different n-gram types\n",
+        "4. Analyze sequential patterns using Sankey diagrams\n",
+        "\n",
+        "---\n",
+        "**Happy analyzing! 🚀**"
+    ]
+})
+
+# Save the notebook
+with open('npath_text_analysis.ipynb', 'w') as f:
+    json.dump(notebook, f, indent=1)
+
+print("✅ Notebook rebuilt successfully!")
+print(f"📊 Total cells: {len(notebook['cells'])}")
+
