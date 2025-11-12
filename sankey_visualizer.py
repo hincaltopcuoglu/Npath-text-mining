@@ -291,7 +291,89 @@ class SankeyVisualizer:
                                             'color': self.class_colors.get(class_name, '#888888')
                                         })
 
+        # Create class nodes at the rightmost column
+        class_column_idx = len(n_sequence)  # Rightmost column after all n-gram columns
+        class_nodes = {}
+        
+        for class_name in all_classes:
+            class_node_label = f"CLASS: {class_name}"
+            if class_node_label not in node_positions:
+                nodes.append({
+                    'id': node_id,
+                    'label': class_node_label,
+                    'column': class_column_idx,
+                    'class': class_name,
+                    'ngram': class_name,
+                    'n': 'class',
+                    'is_class_node': True
+                })
+                class_nodes[class_name] = node_id
+                node_positions[class_node_label] = node_id
+                node_id += 1
+        
+        # Connect ALL n-gram levels to their target classes
+        # This creates flows from n-grams at all levels to their target classes
+        for n in n_sequence:
+            if n not in top_patterns:
+                continue
+            
+            for class_name in all_classes:
+                if class_name not in top_patterns[n]:
+                    continue
+                
+                if class_name not in class_nodes:
+                    continue
+                
+                class_node_id = class_nodes[class_name]
+                patterns = top_patterns[n][class_name]
+                
+                # Connect all n-grams of this class to the class node
+                for pattern in patterns:
+                    ngram_col = 'ngram' if 'ngram' in pattern else 'pattern'
+                    ngram_str = pattern.get(ngram_col, '')
+                    
+                    if not ngram_str:
+                        continue
+                    
+                    # Convert ngram to string if needed
+                    if isinstance(ngram_str, (tuple, list)):
+                        ngram_str = ' '.join(str(x) for x in ngram_str)
+                    elif isinstance(ngram_str, str) and ngram_str.startswith('('):
+                        ngram_str = ngram_str.strip('()').replace("'", "").replace(',', ' ')
+                    
+                    # Find the corresponding n-gram node
+                    ngram_node_label = f"{class_name[:10]}: {ngram_str[:30]}"
+                    if len(ngram_str) > 30:
+                        ngram_node_label += "..."
+                    
+                    if ngram_node_label in node_positions:
+                        ngram_node_id = node_positions[ngram_node_label]
+                        
+                        # Get flow value (score)
+                        score_col = None
+                        for col in ['discriminative_score', 'score', 'combined_score', 'lift']:
+                            if col in pattern:
+                                score_col = col
+                                break
+                        
+                        flow_value = pattern.get(score_col, 1.0)
+                        if isinstance(flow_value, str):
+                            try:
+                                flow_value = float(flow_value)
+                            except ValueError:
+                                flow_value = 1.0
+                        
+                        # Create flow from n-gram to class
+                        source_target_flows.append({
+                            'source': ngram_node_id,
+                            'target': class_node_id,
+                            'value': max(flow_value, 0.1),
+                            'class': class_name,
+                            'color': self.class_colors.get(class_name, '#888888')
+                        })
+
         print(f"  Created {len(nodes)} nodes and {len(source_target_flows)} flows")
+        print(f"  Class nodes created: {len(class_nodes)}")
         
         # Report on classes
         classes_in_diagram = set(node['class'] for node in nodes)
@@ -310,7 +392,8 @@ class SankeyVisualizer:
             'flows': source_target_flows,
             'classes': all_classes,
             'classes_in_diagram': classes_in_diagram,
-            'missing_classes': missing_classes
+            'missing_classes': missing_classes,
+            'class_nodes': class_nodes
         }
 
     def create_sankey_diagram(self, top_k_per_class=15, output_file='sankey_npath_analysis.html'):
