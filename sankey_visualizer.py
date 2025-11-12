@@ -2,6 +2,7 @@
 Sankey Diagram Visualizer for nPath-like Sequential Pattern Analysis
 Shows flow of n-grams from 1-gram to 5-gram and their impact on classes
 """
+import os
 import warnings
 from collections import defaultdict
 from typing import Dict, List, Tuple
@@ -35,11 +36,11 @@ class SankeyVisualizer:
                 counts_df = None
                 disc_df = None
 
-                if pd.io.common.file_exists(counts_file):
+                if os.path.exists(counts_file):
                     counts_df = pd.read_csv(counts_file)
                     print(f"  ✅ Loaded {n}-gram counts: {len(counts_df)} entries")
 
-                if pd.io.common.file_exists(disc_file):
+                if os.path.exists(disc_file):
                     disc_df = pd.read_csv(disc_file)
                     print(f"  ✅ Loaded {n}-gram discriminative: {len(disc_df)} entries")
 
