@@ -64,7 +64,7 @@ class DistilBertPatternAnalyzer:
         print(f"\n🔍 Extracting embeddings and attention patterns from {len(texts)} texts...")
         
         all_embeddings = []
-        all_attention = []
+        all_attention_means = []  # Store mean attention instead of variable-size patterns
         
         with torch.no_grad():
             for batch_start in range(0, len(texts), batch_size):
@@ -88,17 +88,20 @@ class DistilBertPatternAnalyzer:
                 all_embeddings.append(embeddings)
                 
                 # Get attention weights (last layer, first head)
+                # Instead of storing variable-size attention matrices, compute mean attention
                 attention = outputs.attentions[-1][:, 0, :, :].cpu().numpy()
-                all_attention.append(attention)
+                # Take mean across sequence dimension to get fixed-size feature vector
+                attention_mean = np.mean(attention, axis=(1, 2))  # Shape: (batch_size,)
+                all_attention_means.append(attention_mean)
                 
                 if (batch_end - batch_start) % (batch_size * 2) == 0:
                     print(f"  ✅ Processed {batch_end}/{len(texts)} texts")
         
         self.embeddings = np.vstack(all_embeddings)
-        self.attention_patterns = np.vstack(all_attention)
+        self.attention_patterns = np.concatenate(all_attention_means, axis=0)
         
         print(f"✅ Extracted embeddings shape: {self.embeddings.shape}")
-        print(f"✅ Extracted attention shape: {self.attention_patterns.shape}")
+        print(f"✅ Extracted attention patterns shape: {self.attention_patterns.shape}")
         
         return self.embeddings, self.attention_patterns
 
