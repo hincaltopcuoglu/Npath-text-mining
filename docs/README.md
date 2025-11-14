@@ -101,15 +101,70 @@ miner.visualize_patterns(patterns)
 └── README.md                # Bu dosya
 ```
 
+## DistilBERT Semantic Analysis (Yeni)
+
+### Sankey Visualization
+
+Proje artık DistilBERT kullanarak semantic themes'i çıkarıyor ve Sankey diyagramı ile görselleştiriyor:
+
+**Özellikler:**
+- 🤖 DistilBERT model kullanarak semantic embeddings
+- 🎯 K-means clustering ile semantic themes extraction
+- 📊 Sankey flow: Themes → Sub-themes → Categories
+- 📈 Pattern distribution analizi
+- 💾 CSV export
+
+### Colab Notebook Kullanımı
+
+Google Colab'da çalıştırmak için:
+
+1. **Notebook'u açın**: [npath_text_analysis.ipynb](https://colab.research.google.com/github/hincaltopcuoglu/Npath-text-mining/blob/master/npath_text_analysis.ipynb)
+
+2. **Cells'i sırayla çalıştırın**:
+   - Cell 18: Install dependencies
+   - Cell 19: Download analyzer module
+   - Cell 20: Upload `opinions.csv`
+   - Cell 21: Run Analysis (5-15 min)
+   - Cell 22: View Sankey diagram
+   - Cell 23: Analyze pattern distribution
+   - Cell 24: Download results
+
+3. **Output files**:
+   - `distilbert_patterns_sankey.html` - Interactive Sankey visualization
+   - `distilbert_patterns.csv` - Pattern mappings
+
+### Sankey Visualization Açıklaması
+
+Sankey diyagramı şu yapıyı gösterir:
+
+```
+Semantic Themes (5)
+    ↓
+Sub-themes (3 per theme)
+    ↓
+Opinion Categories (type column)
+```
+
+**İnteraktif Özellikler:**
+- 🖱️ Hover: Flow değerlerini görmek için üzerine gelin
+- 🔗 Click: Categories arasındaki bağlantıları izleyin
+- 💾 Save: HTML sağ tıkla → Kaydet
+
+### Örnek Sonuç
+
+Generated files:
+- `distilbert_patterns_sankey.html` - Themes'in opinions'larla nasıl bağlandığını gösterir
+- `distilbert_patterns.csv` - Tüm pattern mappings
+
 ## Veri Formatı
 
 CSV dosyanız şu kolonları içermelidir:
 - `text`: Analiz edilecek text verisi
-- `category`: Kategori etiketi (4 kategori)
+- `category`: Kategori etiketi (4 kategori) veya `type`: Opinion type etiketi
 
 Örnek:
 ```csv
-text,category
+text,type
 "Yapay zeka ve makine öğrenmesi gelecekte çok önemli olacak",Teknoloji
 "Sağlıklı beslenme ve düzenli egzersiz çok önemli",Sağlık
 ```
