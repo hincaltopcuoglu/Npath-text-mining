@@ -145,7 +145,7 @@ Sub-themes (3 per theme)
 Opinion Categories (type column)
 ```
 
-![DistilBERT Semantic Patterns Sankey Visualization](./images/sankey_visualization.png)
+![DistilBERT Semantic Patterns Sankey Visualization](docs/images/sankey_visualization.png)
 
 *Yukarıdaki görsel: Semantic themes'in opinion categories'ler ile nasıl bağlandığını gösteren Sankey diyagramı*
 
